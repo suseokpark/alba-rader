@@ -1,9 +1,8 @@
-import adapter from '@sveltejs/adapter-auto';
 import cloudflare from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig(({ command }) => ({
+export default defineConfig({
 	plugins: [
 		sveltekit({
 			compilerOptions: {
@@ -12,8 +11,8 @@ export default defineConfig(({ command }) => ({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// Keep local development unchanged; production includes the search API Worker.
-			adapter: command === 'build' ? cloudflare({ config: 'wrangler.sites.jsonc' }) : adapter()
+			// Local preview has its own persistent D1; Sites binds a separate production DB.
+			adapter: cloudflare({ config: 'wrangler.sites.jsonc', platformProxy: { configPath: 'wrangler.sites.jsonc', persist: { path: '.wrangler/state/v3' } } })
 		})
 	]
-}));
+});

@@ -8,5 +8,6 @@
     "directory": "dist/client",
     "binding": "ASSETS"
   },
-  "send_metrics": false
+  "send_metrics": false,
+  "d1_databases": [{ "binding": "DB", "database_name": "alba-clicks-local", "database_id": "00000000-0000-0000-0000-000000000001", "migrations_dir": "drizzle" }]
 }

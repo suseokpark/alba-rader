@@ -794,3 +794,21 @@ OS클립보드/OSIME/실제페이지확대·실기기·스크린리더미검증.
 다음우선순위: P1 알바천국 최종검색경로미일치 원인 진단(작은글자보다우선), P2 카드주소·일정·상세글자대비. 프로덕션실검색은사용자로그인승인후검증. 이번추가요청은확인이므로UI개선은아직구현하지않음.
 산출물 artifacts/deployment-202609252257/deployment-review-202609252301.html,evidence.md,PNG01~04(로컬Worker임을명시). 보고서1280/390이미지3/3·문서/section/figure/table넘침0,우선순위표시각검수. 임시검증tab14종료/viewport복원/인증대기tab13handoff/사용자tab1·2보존.
 이 단락은 배포 이후의 문서 기록이다. 실제 배포 소스는7adb436이며 후속 문서만의 커밋을 새 앱 배포로 보고하지 않는다.
+
+## 사용자 요청 — 2026-09-25 23:03~23:14 KST: 실제 공고 클릭 통계
+
+요청 ‘실제 어떤 검색 결과를 많이 클릭했는지 체크’에 따라 개인 이력이 아닌 전체 공고 클릭 이벤트 집계를 추가했다. Sites building/hosting·ego-browser 사용. clock 시작 및 변경 직전 확인. 기존 자동화 종료 시각과 no-push/no-deploy는 그대로이고, 이번 수동 Sites 수정만 기존 비공개 배포 흐름으로 반영한다.
+
+- 검색 카드 primary click(키보드 포함)/middle auxclick → same-origin JSON beacon, 불가 시 keepalive fetch. 링크 href/target/rel 유지, preventDefault/전송대기 없음. 검색·원문·지도 조회량 확대 없음.
+- D1 `job_clicks`: 이벤트별 UUID 전역 PK, 서버시각, 업체, canonical 상세URL/공고키, 공개 제목·사업장명. 검색어/지정주소/사용자ID/IP/UA/cookie 미저장. 원문 메타 자체의 공개지명·호스팅 로그는 별도임을 README에 설명. UUID는 소문자 정규화/중복 delivery 무시, 반복클릭 포함, 자동화/사람·원문도착·지원완료 구분불가.
+- 서버 Origin/content-type/실제 body8KB/필드 allowlist/업체별 HTTPS 상세URL/중복adid 검증, prepared SQL. 기간은 오늘 포함 KST7/30일, 업체별 필터, 클릭·공고수/상위30. 90일 초과는 클릭 수신시 최대100건씩 순차 정리. 조회 no-store. runtime CREATE/ALTER/seed 없음.
+- Drizzle 생성 schema-only 0000_equal_bushwacker SQL+meta 검사. localhost에 처음 적용 성공, 재실행 ‘No migrations to apply’. 로컬 D1 파일과 운영 DB 분리. Git 제외된 로컬 검증 클릭은 운영에 전송하지 않음. schema-only migration만 패키징.
+- `/analytics` 및 상단/하단 안내, 따뜻한 기존 디자인·업체색/순서 유지. loading/empty/error/retry/12초 client deadline·조건변경 stale응답 방지. 통계 조회 링크는 클릭 집계 제외.
+- 자동300/300 PASS(기존294+신규6), check0오류0경고, Cloudflare Worker build 성공. 신규6은 인메모리 SQLite 합성데이터만: URL/UUID/개인필드거부·KST경계·중복/반복·기간/업체·상위30/전체집계·retention/index plan·전송실패/클릭구분. 실제 사용자 성과가 아님.
+- localhost API 악성입력: 잘못된기간400/cross-origin403/잘못된body400/oversize413/type415. 초기 oversize reader.cancel이 Node 연결종료를 유발해 length선검사+reader lock 해제 후413 재확인. npm audit runtime0, 개발도구 포함 low4/moderate4(Drizzle 개발 의존 포함), 강제업데이트 없음. 기존 lock 패키지 버전 변경0 확인.
+- 실제UI: 초기0 → 전국카페 알바몬 단1회20건 조회 → 공개공고119355258 카드1회 클릭 → DB/report1회·1공고. 직접 POST로 성공클릭 넣지 않음. 1은 에이전트의 로컬 QA 클릭이며 실제 사용자 행동 지표 아님. IAB 새 원문탭 열림/도착은 확인하지 못함; 원문 도착 성공으로 보고하지 않음. 코드/설정 갱신 후 dev재시작·화면초기화에도 DB1유지 확인.
+- 당근 필터0/empty 확인. 수정 전 offline 모의에서 raw ‘Failed to fetch’ 노출 발견 → 친숙한 한국어 실패문구로 수정. 임시tab15는 offline 중 HMR이 오류 data URL로 이동해 도구 정책상 복원·종료 못함. 재접근 우회하지 않고 미표시/미보존 임시탭 자동정리에 맡김. 정상 임시tab16에서 API URL만 차단해 한국어 오류+다시시도 확인, 차단 해제 후복구. 이 API차단은 실제운영장애 아님.
+- 현재 UI 1280 시각확인, 390 문서390/순위카드넘침0/주요컨트롤44px. 320/root32/reduce 문서320/영역넘침0/컨트롤59px이상, Tab업체선택 outline3px. 30일을 선택하면8월27일00:00~현재 표시. media/root/viewport/URL차단 복원. 모바일 실기기/스크린리더/12초 실제경과 미검증.
+- Sites 현재 owner/custom/allowed owner1/groups0 확인, audience 변경없음. 통계GET은 별도앱관리자인증이 아니라 소유자전용 Sites게이트에 의존. 향후 공개전환 전 조회권한 분리 필요. 운영 로그인은 기존 사용자승인 대기중이며 임의 로그인/프로필공유 안 함.
+
+산출물 `artifacts/click-analytics-202609252312/` PNG01~04/evidence.md. 운영 배포 결과는 완료 후 별도 기록. 다음 기존우선후보는 알바천국 최종검색경로 불일치 원인, 작은글자 대비; 이번 클릭기능에서 임의 수정하지 않음.

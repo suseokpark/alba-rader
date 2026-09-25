@@ -11,6 +11,7 @@
   import { addressMapUrl, neighborhoodMapUrl } from '$lib/map-links';
   import { createSearchSnapshot, requestSearchSource, SearchRequestError, type SearchSnapshot } from '$lib/search-request';
   import { appHandoffUrl, copyHandoffUrl } from '$lib/browser-handoff';
+  import { trackJobClick } from '$lib/click-analytics';
 
   type Lane = { source: SourceId; state: 'loading' | 'done'; result?: SearchResult; error?: string; cancelled?: boolean; retryable?: boolean; retryingFailed?: boolean; retryNotice?: string; progress?: DaangnSearchProgress };
   let query = $state('');
@@ -339,7 +340,7 @@
 <main>
   <header>
     <a class="brand" href="/" aria-label="알바레이더 홈"><span aria-hidden="true">◉</span> 알바레이더</a>
-    <span class="header-note">오늘의 일을 찾는 가장 가벼운 시작</span>
+    <a class="quiet-button" href="/analytics">클릭 통계</a>
   </header>
 
   <section class="search-section" aria-labelledby="page-title">
@@ -444,7 +445,7 @@
               <p class="checked">{time(result.checkedAt)} {result.regionResults ? '결과 묶음 갱신 · 동네별 조회 시각은 위에 표시' : '조회'} · 공개 검색의 일부 공고</p>
               {#if result.regionNote}<p class="region-note">{result.regionNote}</p>{/if}
               {#if lane.visible.length}
-                <div class="listings">{#each lane.visible as item (item.job.id)}{@const job = item.job}<article class="job-card"><a href={job.url} target="_blank" rel="noopener noreferrer">{#if item.unverifiedSchedule}<p class="unverified-schedule">선택한 근무조건 확인 필요</p>{/if}<h4>{job.title}<span class="external-icon" aria-hidden="true">↗</span></h4>{#if job.company}<p class="company">{job.company}</p>{/if}{#if job.location}<p class="location">{job.location}</p>{/if}{#if job.pay}<p class="pay">{job.pay}</p>{/if}{#if job.schedule}<p class="schedule">{job.schedule}</p>{/if}<span class="detail-link">공고 상세 보기 ↗</span></a></article>{/each}</div>
+                <div class="listings">{#each lane.visible as item (item.job.id)}{@const job = item.job}<article class="job-card"><a href={job.url} target="_blank" rel="noopener noreferrer" onclick={(event) => trackJobClick(event, lane.source, job)} onauxclick={(event) => trackJobClick(event, lane.source, job)}>{#if item.unverifiedSchedule}<p class="unverified-schedule">선택한 근무조건 확인 필요</p>{/if}<h4>{job.title}<span class="external-icon" aria-hidden="true">↗</span></h4>{#if job.company}<p class="company">{job.company}</p>{/if}{#if job.location}<p class="location">{job.location}</p>{/if}{#if job.pay}<p class="pay">{job.pay}</p>{/if}{#if job.schedule}<p class="schedule">{job.schedule}</p>{/if}<span class="detail-link">공고 상세 보기 ↗</span></a></article>{/each}</div>
               {:else if result.jobs.length}<div class="lane-message lane-filtered-empty"><strong>선택한 필터에 맞는 공고가 없어요.</strong><p>불러온 {result.jobs.length}건 안에서 일치하는 공고가 없습니다. 정보가 없는 공고도 제외될 수 있어요.</p><button type="button" class="filter-reset" onclick={() => { filters = defaultJobFilters(); }}>필터 초기화</button></div>
               {:else}<div class="lane-message"><strong>{result.interruption ? result.status === 'unavailable' ? '완료된 응답에서도 공고를 확인하지 못했어요.' : '확인된 동네에서는 공고가 없어요.' : result.partial ? '조회된 동네에서는 공고가 없어요.' : '검색된 공고가 없어요.'}</strong><p>{result.interruption ? '미완료 동네의 공고 유무는 아직 몰라요. 위에서 같은 조건으로 전체 다시 조회할 수 있어요.' : result.partial ? '조회에 실패한 동네는 공고 유무를 확인하지 못했습니다. 위에서 실패한 동네만 다시 조회할 수 있어요.' : '검색어를 바꿔 다시 찾아보세요.'}</p></div>{/if}
             {/if}
@@ -458,7 +459,7 @@
       </div>
     {/if}
   </section>
-  <footer class="page-footer">공개 검색 화면에서 확인한 공고입니다. 업체마다 지역·검색 기준이 다를 수 있으며, 최신 모집 상태와 지원 조건은 공고 원문에서 확인하세요.</footer>
+  <footer class="page-footer">공개 검색 화면에서 확인한 공고입니다. 업체마다 지역·검색 기준이 다를 수 있으며, 최신 모집 상태와 지원 조건은 공고 원문에서 확인하세요.<p>어떤 공고가 많이 열리는지 확인하기 위해 공고 클릭 수를 집계합니다. 검색어·지정 주소·방문자 식별정보는 집계 데이터에 저장하지 않습니다. <a href="/analytics">클릭 통계와 집계 기준</a></p></footer>
 </main>
 
 <dialog bind:this={postcodeDialog} class="postcode-dialog" aria-labelledby="postcode-title" onclose={addressDialogClosed}>

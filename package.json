@@ -4,6 +4,8 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.sites.jsonc",
 		"dev": "vite dev",
 		"build": "vite build && wrangler deploy --dry-run --config wrangler.sites.jsonc --outdir dist/server",
 		"preview": "vite preview",
@@ -19,6 +21,7 @@
 		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"drizzle-kit": "^0.31.11",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
@@ -26,6 +29,7 @@
 		"wrangler": "^4.140.0"
 	},
 	"dependencies": {
-		"cheerio": "^1.2.0"
+		"cheerio": "^1.2.0",
+		"drizzle-orm": "^0.45.3"
 	}
 }
