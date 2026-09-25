@@ -40,8 +40,10 @@ function deferred() {
 
 function harness(overrides = {}) {
   const focus = [];
+  const scroll = [];
   const teardowns = [];
-  const target = (name) => ({ disabled: false, focus: () => focus.push(name) });
+  const target = (name) => ({ disabled: false, focus: () => focus.push(name),
+    scrollIntoView: (options) => scroll.push({ target: name, options: { ...options }, focused: focus.at(-1) }) });
   let finishTick;
   const pendingTick = new Promise((resolve) => { finishTick = resolve; });
   const tickStarted = deferred();
@@ -82,7 +84,7 @@ function harness(overrides = {}) {
   const context = createContext(state);
   runInContext(executable, context, { filename: pageUrl.pathname, timeout: 1000 });
   return {
-    state, focus, finishTick, whenTick: tickStarted.promise, ticks: () => ticks,
+    state, focus, scroll, finishTick, whenTick: tickStarted.promise, ticks: () => ticks,
     clearAddress: () => context.clearAddress(), search: () => context.search(),
     destroy() {
       for (const teardown of teardowns) teardown();
@@ -325,6 +327,77 @@ test('only-Daangn multi-neighborhood search with no selected neighborhoods focus
   assert.equal(f.state.validation, plan.message);
   assert.deepEqual(f.focus, ['daangnAreas']);
   assert.equal(f.state.submitted, '이전 검색', 'Invalid input must not replace previously submitted results.');
+});
+
+test('empty separate neighborhoods center their focused add button once without requesting or replacing existing results', async () => {
+  // Source-level control invocation only; viewport visibility is verified by
+  // the real browser separately, not inferred from this scroll spy.
+  const previous = createSearchSnapshot({ query: '이전 검색', selected: ['daangn'], scope: 'address',
+    address: null, areaLevel: 'district', daangnMultiEnabled: true, daangnAreas: [AREA] });
+  assert.equal(previous.ok, true);
+  const lanes = [{ source: 'daangn', state: 'done', result: { jobs: [{ id: 'retained-offline-fixture' }] } }];
+  const filters = { ...defaultJobFilters(), days: 'weekends' };
+  const controller = new AbortController();
+  let fetches = 0;
+  let requests = 0;
+  const f = harness({ selected: ['daangn'], address: null, daangnMultiEnabled: true, daangnAreas: [],
+    lanes, filters, appliedSnapshot: previous.snapshot, generation: 11,
+    controllers: new Map([['daangn', controller]]),
+    fetch: () => { fetches += 1; throw new Error('Invalid neighborhoods must not fetch.'); },
+    requestSearchSource: () => { requests += 1; throw new Error('Invalid neighborhoods must not request a source.'); } });
+  const before = createSearchSnapshot(f.state);
+  assert.equal(before.ok, false);
+  assert.equal(before.field, 'daangnAreas');
+  await f.search();
+  assert.deepEqual(f.focus, ['daangnAreas']);
+  assert.deepEqual(f.scroll, [{ target: 'daangnAreas', options: { block: 'center' }, focused: 'daangnAreas' }],
+    'Only after focus, center the trigger once so nearby feedback has room below it.');
+  assert.equal(f.state.validation, before.message);
+  assert.equal(f.state.lanes, lanes);
+  assert.equal(f.state.appliedSnapshot, previous.snapshot);
+  assert.equal(f.state.filters, filters);
+  assert.equal(f.state.submitted, '이전 검색');
+  assert.equal(f.state.query, '카페');
+  assert.equal(f.state.scope, 'address');
+  assert.equal(f.state.address, null);
+  assert.deepEqual(f.state.selected, ['daangn']);
+  assert.deepEqual(f.state.daangnAreas, []);
+  assert.equal(f.state.generation, 11);
+  assert.equal(controller.signal.aborted, false);
+  assert.equal(fetches, 0);
+  assert.equal(requests, 0);
+});
+
+test('other invalid fields keep their existing focus target without neighborhood centering or requests', async () => {
+  for (const [overrides, field] of [
+    [{ query: ' ', selected: [], address: null, daangnMultiEnabled: true }, 'query'],
+    [{ selected: [], address: null, daangnMultiEnabled: true }, 'sources'],
+    [{ selected: ['daangn'], scope: 'nationwide', daangnMultiEnabled: false }, 'sources'],
+    [{ address: null, daangnMultiEnabled: true, daangnAreas: [] }, 'address'],
+    [{ scope: 'unsupported' }, 'scope'],
+    [{ areaLevel: 'unsupported' }, 'areaLevel']
+  ]) {
+    let fetches = 0;
+    let requests = 0;
+    const f = harness({ ...overrides,
+      fetch: () => { fetches += 1; throw new Error('Invalid fields must not fetch.'); },
+      requestSearchSource: () => { requests += 1; throw new Error('Invalid fields must not request a source.'); } });
+    const plan = createSearchSnapshot(f.state);
+    assert.equal(plan.ok, false);
+    assert.equal(plan.field, field);
+    const lanes = f.state.lanes;
+    const filters = f.state.filters;
+    await f.search();
+    assert.equal(f.state.validation, plan.message);
+    assert.deepEqual(f.focus, [field]);
+    assert.deepEqual(f.scroll, [], `${field} must not inherit separate-neighborhood scroll behavior.`);
+    assert.equal(f.state.lanes, lanes);
+    assert.equal(f.state.filters, filters);
+    assert.equal(f.state.submitted, '이전 검색');
+    assert.equal(f.state.generation, 0);
+    assert.equal(fetches, 0);
+    assert.equal(requests, 0);
+  }
 });
 
 test('all three sources without a base address focus address selection even if separate neighborhoods are also empty', async () => {

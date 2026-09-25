@@ -63,6 +63,7 @@ function queryState(draft, validation = '') {
   context.queryTooLong = evaluate(derivedExpression('queryTooLong'), context);
   context.queryValidation = evaluate(derivedExpression('queryValidation'), context);
   context.addressValidation = evaluate(derivedExpression('addressValidation'), context);
+  context.daangnAreasValidation = evaluate(derivedExpression('daangnAreasValidation'), context);
   return context;
 }
 
@@ -221,12 +222,11 @@ test('editing or clearing the query removes a submitted error without losing liv
     'A now-valid planner result must not retain query-specific feedback even before a clear is observed.');
 });
 
-test('non-query and non-address planner failures retain one general alert without marking the query invalid', () => {
+test('provider, scope and area-level planner failures retain one general alert without marking unrelated controls', () => {
   for (const [overrides, expectedField] of [
     [{ selected: [] }, 'sources'],
     [{ scope: 'unknown' }, 'scope'],
-    [{ areaLevel: 'unknown' }, 'areaLevel'],
-    [{ selected: ['daangn'], daangnMultiEnabled: true, daangnAreas: [] }, 'daangnAreas']
+    [{ areaLevel: 'unknown' }, 'areaLevel']
   ]) {
     const draft = draftWith(overrides);
     const plan = createSearchSnapshot(draft);
@@ -235,13 +235,16 @@ test('non-query and non-address planner failures retain one general alert withou
     const state = queryState(draft, plan.message);
     assert.equal(state.queryValidation, '');
     assert.equal(state.addressValidation, '');
+    assert.equal(state.daangnAreasValidation, '');
     assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), undefined);
+    assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), undefined);
     assert.equal(evaluate(expressionAttribute(queryInput, 'aria-invalid'), state), undefined);
     assert.equal(describedBy(state).includes('query-error'), false);
     const alerts = formAlerts(state);
     assert.equal(alerts.length, 1, `${expectedField} must retain its existing form-level feedback.`);
     assert.notEqual(literalAttribute(alerts[0].node, 'id'), 'query-error');
     assert.notEqual(literalAttribute(alerts[0].node, 'id'), 'address-error');
+    assert.notEqual(literalAttribute(alerts[0].node, 'id'), 'daangn-areas-error');
     assert.equal(textFor(alerts[0].node, state), plan.message);
   }
 });
@@ -269,7 +272,7 @@ test('submitted missing-base-address feedback sits beside the address trigger an
   assert.equal(textFor(error.node, state), plan.message);
   assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), 'address-error');
   assert.equal(describedBy(state).includes('address-error'), false, 'The query must not describe an address error.');
-  assert.equal(attribute(daangnTrigger, 'aria-describedby'), undefined, 'Separate Daangn areas do not use the base-address error.');
+  assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), undefined, 'Separate Daangn areas do not use the base-address error.');
   assert.equal(literalAttribute(addressTrigger, 'type'), 'button');
   for (const searching of [false, true]) {
     assert.equal(evaluate(expressionAttribute(addressTrigger, 'disabled'), { searching }), searching);
@@ -305,8 +308,10 @@ test('real planner precedence routes query, provider and separate-neighborhood e
     [{ query: '   ', selected: [], daangnMultiEnabled: true }, 'query', 'query-error'],
     [{ selected: [], daangnMultiEnabled: true }, 'sources', undefined],
     [{ selected: ['daangn'], daangnMultiEnabled: false }, 'sources', undefined],
-    [{ selected: ['daangn'], daangnMultiEnabled: true }, 'daangnAreas', undefined],
-    [{ selected: ['albamon', 'daangn', 'alba'], daangnMultiEnabled: true }, 'address', 'address-error']
+    [{ selected: ['daangn'], daangnMultiEnabled: true }, 'daangnAreas', 'daangn-areas-error'],
+    [{ selected: ['albamon', 'daangn', 'alba'], daangnMultiEnabled: true }, 'address', 'address-error'],
+    [{ selected: ['albamon', 'daangn', 'alba'], daangnMultiEnabled: true, address: AREA }, 'daangnAreas', 'daangn-areas-error'],
+    [{ selected: ['albamon', 'daangn', 'alba'], daangnMultiEnabled: true, scope: 'nationwide' }, 'daangnAreas', 'daangn-areas-error']
   ]) {
     const draft = draftWith({ scope: 'address', ...overrides });
     const before = structuredClone(draft);
@@ -321,19 +326,22 @@ test('real planner precedence routes query, provider and separate-neighborhood e
     assert.equal(state.addressValidation, field === 'address' ? plan.message : '');
     assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), field === 'address' ? 'address-error' : undefined);
     assert.equal(state.queryValidation, field === 'query' ? plan.message : '');
+    assert.equal(state.daangnAreasValidation, field === 'daangnAreas' ? plan.message : '');
+    assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), field === 'daangnAreas' ? 'daangn-areas-error' : undefined);
     assert.deepEqual(draft, before, 'Feedback must not change provider selection, scope or missing-address planning.');
   }
 });
 
-test('actual edit handlers clear submitted address feedback without starting a search or touching existing results', () => {
+for (const field of ['address', 'daangnAreas']) test(`actual edit handlers clear submitted ${field} feedback without starting a search or touching existing results`, () => {
   const nationwide = elements.find(({ node }) => node.name === 'button'
     && node.fragment?.nodes.some((child) => child.type === 'Text' && child.data.trim() === '전국'))?.node;
   const level = elements.find(({ node }) => literalAttribute(node, 'id') === 'area-level')?.node;
   assert.ok(nationwide && level);
-  const draft = draftWith({ scope: 'address' });
+  const draft = draftWith({ scope: 'address', ...(field === 'daangnAreas'
+    ? { selected: ['daangn'], daangnMultiEnabled: true } : {}) });
   const plan = createSearchSnapshot(draft);
   assert.equal(plan.ok, false);
-  assert.equal(plan.field, 'address');
+  assert.equal(plan.field, field);
   for (const [control, event, changed] of [
     [queryInput, 'oninput', { query: '주말 카페' }],
     [level, 'onchange', { areaLevel: 'neighborhood' }],
@@ -349,6 +357,7 @@ test('actual edit handlers clear submitted address feedback without starting a s
       search: () => effects.push('search'), fetch: () => effects.push('fetch'),
       abortRequests: () => effects.push('abort'),
       addressTrigger: { focus: () => effects.push('focus') },
+      daangnTrigger: { focus: () => effects.push('focus-daangn') },
       controllers: new Map([['albamon', controller]]), ...changed });
     evaluate(expressionAttribute(control, event), state)();
     assert.equal(state.validation, '');
@@ -356,6 +365,8 @@ test('actual edit handlers clear submitted address feedback without starting a s
     assert.equal(state.scope, control === nationwide ? 'nationwide' : draft.scope);
     assert.equal(state.address, null);
     assert.equal(state.selected, draft.selected);
+    assert.equal(state.daangnMultiEnabled, draft.daangnMultiEnabled);
+    assert.equal(state.daangnAreas, draft.daangnAreas);
     assert.equal(state.appliedSnapshot, snapshot);
     assert.equal(state.lanes, lanes);
     assert.equal(state.filters, filters);
@@ -364,7 +375,94 @@ test('actual edit handlers clear submitted address feedback without starting a s
     assert.deepEqual(effects, []);
     const updated = queryState({ ...draft, query: state.query, scope: state.scope, areaLevel: state.areaLevel }, state.validation);
     assert.equal(updated.addressValidation, '');
+    assert.equal(updated.daangnAreasValidation, '');
     assert.equal(formAlerts(updated).length, 0);
     assert.equal(attributeValue(addressTrigger, 'aria-describedby', updated), undefined);
+    assert.equal(attributeValue(daangnTrigger, 'aria-describedby', updated), undefined);
+  }
+});
+
+test('submitted empty Daangn neighborhoods show one nearby alert linked only to the add-neighborhood trigger', () => {
+  const error = elements.find(({ node }) => literalAttribute(node, 'id') === 'daangn-areas-error');
+  assert.ok(error, 'Empty separate Daangn neighborhoods need an error beside their add button, not only below all region controls.');
+  const actions = elements.find(({ node }) => literalAttribute(node, 'class') === 'daangn-picker-actions')?.node;
+  const disclosure = elements.find(({ node }) => literalAttribute(node, 'class') === 'neighborhood-disclosure')?.node;
+  assert.ok(actions && disclosure);
+  assert.equal(literalAttribute(error.node, 'role'), 'alert');
+  assert.equal(elements.filter(({ node }) => literalAttribute(node, 'id') === 'daangn-areas-error').length, 1);
+  assert.equal(attribute(error.node, 'hidden'), undefined);
+  assert.ok(actions.end <= error.node.start && error.node.end <= disclosure.start,
+    'Keep the neighborhood error after its action row, before the detailed explanation.');
+  assert.ok(!error.ancestors.some((node) => node.type === 'RegularElement' && node.name === 'details'));
+  const draft = draftWith({ scope: 'address', selected: ['daangn'], daangnMultiEnabled: true });
+  const plan = createSearchSnapshot(draft);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.field, 'daangnAreas');
+  const state = queryState(draft, plan.message);
+  const alerts = formAlerts(state);
+  assert.equal(alerts.length, 1, 'The neighborhood error replaces the general alert instead of duplicating it.');
+  assert.equal(alerts[0].node, error.node);
+  assert.equal(textFor(error.node, state), plan.message);
+  assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), 'daangn-areas-error');
+  assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), undefined);
+  assert.equal(describedBy(state).includes('daangn-areas-error'), false);
+  assert.equal(literalAttribute(daangnTrigger, 'type'), 'button');
+  for (const [searching, length, disabled] of [[false, 0, false], [true, 0, true], [false, 5, true]]) {
+    assert.equal(evaluate(expressionAttribute(daangnTrigger, 'disabled'),
+      { searching, daangnAreas: Array(length), MAX_DAANGN_AREAS: 5 }), disabled);
+  }
+  const opened = [];
+  evaluate(expressionAttribute(daangnTrigger, 'onclick'), { openAddressSearch: (...args) => opened.push(args) })();
+  assert.deepEqual(opened, [['daangn']], 'The trigger still opens the separate-neighborhood picker, not the base-address picker.');
+});
+
+test('neighborhood feedback is absent before submission and for valid or inactive separate selections', () => {
+  const error = elements.find(({ node }) => literalAttribute(node, 'id') === 'daangn-areas-error');
+  assert.ok(error);
+  for (const [overrides, valid] of [
+    [{ scope: 'address', selected: ['daangn'], daangnMultiEnabled: true }, false],
+    [{ scope: 'nationwide', selected: ['daangn'], daangnMultiEnabled: true }, false],
+    [{ scope: 'address', selected: ['daangn'], daangnMultiEnabled: true, daangnAreas: [AREA] }, true],
+    [{ daangnMultiEnabled: true, selected: ['albamon'] }, true],
+    [{ scope: 'address', address: AREA, daangnMultiEnabled: true, selected: ['albamon'] }, true],
+    [{ daangnMultiEnabled: false }, true]
+  ]) {
+    const draft = draftWith(overrides);
+    const before = structuredClone(draft);
+    const state = queryState(draft);
+    assert.equal(state.draftSnapshot.ok, valid);
+    if (!valid) assert.equal(state.draftSnapshot.field, 'daangnAreas');
+    assert.equal(state.daangnAreasValidation, '');
+    assert.equal(formAlerts(state).length, 0);
+    assert.equal(visible(error, state), false);
+    assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), undefined,
+      'Do not describe an absent error just because the separate neighborhood list is empty.');
+    assert.deepEqual(draft, before);
+  }
+});
+
+test('malformed separate-neighborhood modes keep a general error even when their picker panel is hidden', () => {
+  // These malformed drafts are defensive planner inputs, not reachable native
+  // checkbox values. A normal inactive boolean remains quiet and valid.
+  const inactive = queryState(draftWith({ daangnMultiEnabled: false }));
+  assert.equal(inactive.draftSnapshot.ok, true);
+  assert.equal(formAlerts(inactive).length, 0);
+  assert.equal(inactive.daangnAreasValidation, '');
+  assert.equal(attributeValue(daangnTrigger, 'aria-describedby', inactive), undefined);
+  for (const daangnMultiEnabled of [null, undefined, 0, '', 'true']) {
+    const draft = draftWith({ daangnMultiEnabled });
+    const plan = createSearchSnapshot(draft);
+    assert.equal(plan.ok, false);
+    assert.equal(plan.field, 'daangnAreas');
+    const state = queryState(draft, plan.message);
+    const alerts = formAlerts(state);
+    assert.equal(alerts.length, 1,
+      `Malformed mode ${String(daangnMultiEnabled)} must not lose its general error behind an inactive picker.`);
+    assert.equal(literalAttribute(alerts[0].node, 'id'), undefined);
+    assert.equal(textFor(alerts[0].node, state), plan.message);
+    assert.equal(state.daangnAreasValidation, '', 'Only an explicitly enabled picker owns inline neighborhood feedback.');
+    assert.equal(attributeValue(daangnTrigger, 'aria-describedby', state), undefined);
+    assert.equal(state.addressValidation, '');
+    assert.equal(state.queryValidation, '');
   }
 });
