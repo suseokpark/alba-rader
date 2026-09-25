@@ -57,6 +57,7 @@
   let generation = 0;
   const draftSnapshot = $derived(createSearchSnapshot({ query, selected, scope, address, areaLevel, daangnMultiEnabled, daangnAreas }));
   const queryValidation = $derived(validation && !draftSnapshot.ok && draftSnapshot.field === 'query' ? validation : '');
+  const addressValidation = $derived(validation && !draftSnapshot.ok && draftSnapshot.field === 'address' ? validation : '');
   const hasDraftChanges = $derived(!!appliedSnapshot && (!draftSnapshot.ok || draftSnapshot.snapshot.fingerprint !== appliedSnapshot.fingerprint));
 
   const searching = $derived(lanes.some((lane) => lane.state === 'loading'));
@@ -368,10 +369,11 @@
           <div class="address-value">{#if address}<span class="postcode">{address.zonecode}</span><strong>{address.address}</strong><span class="address-area">{address.sido} {address.sigungu} {address.bname}</span>{:else}<span>{scope === 'address' ? '동네를 찾을 기준 주소를 지정해주세요.' : '지역 제한 없이 검색합니다.'}</span>{/if}</div>
           <div class="address-actions">
             {#if baseMapUrl && address}<a class="address-map" href={baseMapUrl} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-label={`${address.address} 지도 보기 (카카오맵, 새 탭)`} aria-describedby="map-help">지도 보기 <span aria-hidden="true">↗</span></a>{/if}
-            <button type="button" class="address-find" bind:this={addressTrigger} disabled={searching} onclick={() => void openAddressSearch()}>{address ? '주소 변경' : '주소 찾기'}</button>
+            <button type="button" class="address-find" bind:this={addressTrigger} disabled={searching} aria-describedby={addressValidation ? 'address-error' : undefined} onclick={() => void openAddressSearch()}>{address ? '주소 변경' : '주소 찾기'}</button>
             {#if address}<button type="button" class="address-clear" disabled={searching} aria-label="선택한 주소 지우기" onclick={clearAddress}>×</button>{/if}
           </div>
         </div>
+        {#if addressValidation}<p id="address-error" class="validation" role="alert">{addressValidation}</p>{/if}
         <div class="area-level-row"><label for="area-level">지역 단위 <select id="area-level" bind:this={areaLevelInput} bind:value={areaLevel} disabled={searching || scope === 'nationwide'} onchange={() => { validation = ''; }} aria-describedby={scope === 'address' && address ? 'area-level-preview area-level-help' : 'area-level-help'}>{#each areaChoices as choice}<option value={choice.value}>{areaLevelNames[choice.value]}</option>{/each}</select></label>{#if scope === 'address' && address}<p class="area-preview" id="area-level-preview">검색할 지역: <strong>{areaLabel(address, areaLevel)}</strong></p>{/if}</div>
         <p class="area-help" id="area-level-help">{baseAreaHelp(scope, areaLevel, address)} {daangnMultiEnabled ? '당근에는 아래 별도 동네 목록만 적용됩니다.' : '당근은 동·읍·면 범위에서 검색하거나, 아래에서 동네들을 별도로 선택할 수 있어요.'} 변경 후 검색 버튼을 눌러주세요.</p>
         <div class="daangn-area-picker">
@@ -401,7 +403,7 @@
         <details class="map-disclosure"><summary>지도 보기 안내</summary><p class="area-help map-help" id="map-help">지도 보기를 누르면 선택한 주소 또는 동네명을 카카오맵에 전달해 새 탭으로 검색합니다. 공고의 근무지나 검색 반경을 표시하는 기능은 아니에요.</p></details>
       </div>
       <div class="search-options"><div class="source-options" bind:this={sourceTrigger} aria-label="검색할 업체">{#each sources as source}<button type="button" class={`source-toggle ${source.id}`} class:chosen={activeSources.includes(source.id)} aria-pressed={activeSources.includes(source.id)} disabled={searching || !supportsSearchArea(source.id, scope, areaLevel, daangnMultiEnabled)} onclick={() => toggleSource(source.id)}><span aria-hidden="true">{activeSources.includes(source.id) ? '✓' : '+'}</span> {source.name}{#if source.id === 'daangn' && daangnMultiEnabled} · 별도 {daangnAreas.length}곳{:else if !supportsSearchArea(source.id, scope, areaLevel)} · 동네만 지원{/if}</button>{/each}</div><p id="query-hint">공고 목록이 이 화면에 표시됩니다.</p></div>
-      {#if validation && !queryValidation}<p class="validation" role="alert">{validation}</p>{/if}
+      {#if validation && !queryValidation && !addressValidation}<p class="validation" role="alert">{validation}</p>{/if}
       <button class="search-submit search-submit-bottom" type="submit" disabled={searching}>{#if searching}<span class="spinner" aria-hidden="true"></span> {finished}/{lanes.length} 조회 중{:else}선택한 {activeSources.length}개 업체 검색 <span aria-hidden="true">→</span>{/if}</button>
       <div class="search-actions">
         {#if searching}<button type="button" class="quiet-button" bind:this={stopButton} onclick={cancelFromButton}>조회 중단</button><p>확인된 결과는 남겨둬요. 진행 중인 서버 조회는 종료까지 잠시 걸릴 수 있어요.</p>{/if}

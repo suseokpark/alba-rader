@@ -62,6 +62,7 @@ function queryState(draft, validation = '') {
   const context = { ...draft, validation, draftSnapshot: createSearchSnapshot(draft) };
   context.queryTooLong = evaluate(derivedExpression('queryTooLong'), context);
   context.queryValidation = evaluate(derivedExpression('queryValidation'), context);
+  context.addressValidation = evaluate(derivedExpression('addressValidation'), context);
   return context;
 }
 
@@ -78,6 +79,15 @@ walk(page.fragment, (node, ancestors) => {
   if (node.type === 'RegularElement') elements.push({ node, ancestors });
 });
 const queryInput = elements.find(({ node }) => node.name === 'input' && literalAttribute(node, 'id') === 'query')?.node;
+
+function boundElement(name) {
+  return elements.find(({ node }) => node.attributes.some((item) => item.type === 'BindDirective'
+    && item.name === 'this' && item.expression?.name === name))?.node;
+}
+
+const addressTrigger = boundElement('addressTrigger');
+const daangnTrigger = boundElement('daangnTrigger');
+const AREA = Object.freeze({ sido: '서울', sigungu: '마포구', bname: '동교동', bcode: '1144012100', sigunguCode: '11440' });
 
 function visible(entry, context) {
   return entry.ancestors.every((node, index, ancestors) => node.type !== 'IfBlock'
@@ -211,12 +221,11 @@ test('editing or clearing the query removes a submitted error without losing liv
     'A now-valid planner result must not retain query-specific feedback even before a clear is observed.');
 });
 
-test('non-query planner failures retain one general alert without marking the query invalid', () => {
+test('non-query and non-address planner failures retain one general alert without marking the query invalid', () => {
   for (const [overrides, expectedField] of [
     [{ selected: [] }, 'sources'],
     [{ scope: 'unknown' }, 'scope'],
     [{ areaLevel: 'unknown' }, 'areaLevel'],
-    [{ scope: 'address', address: null }, 'address'],
     [{ selected: ['daangn'], daangnMultiEnabled: true, daangnAreas: [] }, 'daangnAreas']
   ]) {
     const draft = draftWith(overrides);
@@ -225,11 +234,137 @@ test('non-query planner failures retain one general alert without marking the qu
     assert.equal(plan.field, expectedField);
     const state = queryState(draft, plan.message);
     assert.equal(state.queryValidation, '');
+    assert.equal(state.addressValidation, '');
+    assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), undefined);
     assert.equal(evaluate(expressionAttribute(queryInput, 'aria-invalid'), state), undefined);
     assert.equal(describedBy(state).includes('query-error'), false);
     const alerts = formAlerts(state);
     assert.equal(alerts.length, 1, `${expectedField} must retain its existing form-level feedback.`);
     assert.notEqual(literalAttribute(alerts[0].node, 'id'), 'query-error');
+    assert.notEqual(literalAttribute(alerts[0].node, 'id'), 'address-error');
     assert.equal(textFor(alerts[0].node, state), plan.message);
+  }
+});
+
+test('submitted missing-base-address feedback sits beside the address trigger and links only that trigger', () => {
+  const error = elements.find(({ node }) => literalAttribute(node, 'id') === 'address-error');
+  assert.ok(error, 'A missing base address needs a nearby error region, not only the alert below all region controls.');
+  const row = elements.find(({ node }) => literalAttribute(node, 'class') === 'address-row')?.node;
+  const level = elements.find(({ node }) => literalAttribute(node, 'class') === 'area-level-row')?.node;
+  assert.ok(addressTrigger && daangnTrigger && row && level);
+  assert.equal(elements.filter(({ node }) => literalAttribute(node, 'id') === 'address-error').length, 1);
+  assert.equal(literalAttribute(error.node, 'role'), 'alert');
+  assert.equal(attribute(error.node, 'hidden'), undefined);
+  assert.ok(row.end <= error.node.start && error.node.end <= level.start,
+    'Keep address feedback immediately after the address controls and before the region-unit controls.');
+  assert.ok(!error.ancestors.some((node) => node.type === 'RegularElement' && node.name === 'details'));
+  const draft = draftWith({ scope: 'address' });
+  const plan = createSearchSnapshot(draft);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.field, 'address');
+  const state = queryState(draft, plan.message);
+  const alerts = formAlerts(state);
+  assert.equal(alerts.length, 1, 'The inline address error must replace, not duplicate, the general alert.');
+  assert.equal(alerts[0].node, error.node);
+  assert.equal(textFor(error.node, state), plan.message);
+  assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), 'address-error');
+  assert.equal(describedBy(state).includes('address-error'), false, 'The query must not describe an address error.');
+  assert.equal(attribute(daangnTrigger, 'aria-describedby'), undefined, 'Separate Daangn areas do not use the base-address error.');
+  assert.equal(literalAttribute(addressTrigger, 'type'), 'button');
+  for (const searching of [false, true]) {
+    assert.equal(evaluate(expressionAttribute(addressTrigger, 'disabled'), { searching }), searching);
+  }
+  const opened = [];
+  evaluate(expressionAttribute(addressTrigger, 'onclick'), { openAddressSearch: (...args) => opened.push(args) })();
+  assert.deepEqual(opened, [[]], 'The base trigger keeps its existing default-purpose address-picker action.');
+});
+
+test('address feedback stays quiet before submission and when a base address is not required', () => {
+  for (const draft of [
+    draftWith({ scope: 'address' }),
+    draftWith(),
+    draftWith({ scope: 'address', address: AREA }),
+    draftWith({ scope: 'address', selected: ['daangn'], daangnMultiEnabled: true, daangnAreas: [AREA] })
+  ]) {
+    const state = queryState(draft);
+    assert.equal(state.addressValidation, '');
+    assert.equal(formAlerts(state).length, 0);
+    assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), undefined,
+      'Do not leave a reference to a non-rendered submission error.');
+    const error = elements.find(({ node }) => literalAttribute(node, 'id') === 'address-error');
+    assert.equal(visible(error, state), false);
+    if (draft.scope === 'address' && !draft.address && !draft.daangnMultiEnabled) {
+      assert.equal(state.draftSnapshot.ok, false);
+      assert.equal(state.draftSnapshot.field, 'address');
+    } else assert.equal(state.draftSnapshot.ok, true);
+  }
+});
+
+test('real planner precedence routes query, provider and separate-neighborhood errors without claiming a base-address error', () => {
+  for (const [overrides, field, errorId] of [
+    [{ query: '   ', selected: [], daangnMultiEnabled: true }, 'query', 'query-error'],
+    [{ selected: [], daangnMultiEnabled: true }, 'sources', undefined],
+    [{ selected: ['daangn'], daangnMultiEnabled: false }, 'sources', undefined],
+    [{ selected: ['daangn'], daangnMultiEnabled: true }, 'daangnAreas', undefined],
+    [{ selected: ['albamon', 'daangn', 'alba'], daangnMultiEnabled: true }, 'address', 'address-error']
+  ]) {
+    const draft = draftWith({ scope: 'address', ...overrides });
+    const before = structuredClone(draft);
+    const plan = createSearchSnapshot(draft);
+    assert.equal(plan.ok, false);
+    assert.equal(plan.field, field);
+    const state = queryState(draft, plan.message);
+    const alerts = formAlerts(state);
+    assert.equal(alerts.length, 1, `${field} must have one feedback location.`);
+    assert.equal(literalAttribute(alerts[0].node, 'id'), errorId);
+    assert.equal(textFor(alerts[0].node, state), plan.message);
+    assert.equal(state.addressValidation, field === 'address' ? plan.message : '');
+    assert.equal(attributeValue(addressTrigger, 'aria-describedby', state), field === 'address' ? 'address-error' : undefined);
+    assert.equal(state.queryValidation, field === 'query' ? plan.message : '');
+    assert.deepEqual(draft, before, 'Feedback must not change provider selection, scope or missing-address planning.');
+  }
+});
+
+test('actual edit handlers clear submitted address feedback without starting a search or touching existing results', () => {
+  const nationwide = elements.find(({ node }) => node.name === 'button'
+    && node.fragment?.nodes.some((child) => child.type === 'Text' && child.data.trim() === '전국'))?.node;
+  const level = elements.find(({ node }) => literalAttribute(node, 'id') === 'area-level')?.node;
+  assert.ok(nationwide && level);
+  const draft = draftWith({ scope: 'address' });
+  const plan = createSearchSnapshot(draft);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.field, 'address');
+  for (const [control, event, changed] of [
+    [queryInput, 'oninput', { query: '주말 카페' }],
+    [level, 'onchange', { areaLevel: 'neighborhood' }],
+    [nationwide, 'onclick', {}]
+  ]) {
+    const state = queryState(draft, plan.message);
+    const snapshot = Object.freeze({ fingerprint: 'previous-search' });
+    const lanes = [{ source: 'albamon', state: 'done', result: { jobs: [{ id: 'previous' }] } }];
+    const filters = { include: '카페', minHourly: 12000 };
+    const controller = new AbortController();
+    const effects = [];
+    Object.assign(state, { appliedSnapshot: snapshot, lanes, filters, generation: 9,
+      search: () => effects.push('search'), fetch: () => effects.push('fetch'),
+      abortRequests: () => effects.push('abort'),
+      addressTrigger: { focus: () => effects.push('focus') },
+      controllers: new Map([['albamon', controller]]), ...changed });
+    evaluate(expressionAttribute(control, event), state)();
+    assert.equal(state.validation, '');
+    assert.equal(state.query, changed.query || draft.query);
+    assert.equal(state.scope, control === nationwide ? 'nationwide' : draft.scope);
+    assert.equal(state.address, null);
+    assert.equal(state.selected, draft.selected);
+    assert.equal(state.appliedSnapshot, snapshot);
+    assert.equal(state.lanes, lanes);
+    assert.equal(state.filters, filters);
+    assert.equal(state.generation, 9);
+    assert.equal(controller.signal.aborted, false);
+    assert.deepEqual(effects, []);
+    const updated = queryState({ ...draft, query: state.query, scope: state.scope, areaLevel: state.areaLevel }, state.validation);
+    assert.equal(updated.addressValidation, '');
+    assert.equal(formAlerts(updated).length, 0);
+    assert.equal(attributeValue(addressTrigger, 'aria-describedby', updated), undefined);
   }
 });
