@@ -99,3 +99,56 @@ test('known mismatches take precedence over another unknown condition', () => {
   assert.equal(scheduleMatch('주2일 · 09:00~13:00', 'weekends', 'morning'), 'unknown');
   assert.equal(scheduleMatch('주말(토,일) · 09:00~13:00 · 6개월~1년', 'weekends', 'morning'), 'match');
 });
+
+test('negative or incomplete day negotiation clauses are not affirmative evidence', () => {
+  for (const clause of ['요일 협의 불가', '요일 협의 불가능', '요일 협의 안됨', '요일 협의 없음',
+    '요일 협의 가능 여부 미정', '요일 협의 가능한지 문의', '요일 협의 가능하지 않음']) {
+    for (const value of [clause, `월~금 (${clause})`, `요일 협의 · ${clause}`]) {
+      assert.equal(scheduleMatch(`${value} · 09:00~18:00`, 'negotiable', 'all'), 'unknown', value);
+      assert.equal(scheduleMatch(`${value} · 09:00~18:00`, 'weekdays', 'all'), 'unknown', value);
+    }
+  }
+});
+
+test('negative time negotiation remains unknown even beside a nominal range or affirmative clause', () => {
+  for (const clause of ['시간 협의 불가', '시간 협의 불가능', '시간 협의 안됨', '시간 협의 없음',
+    '시간 협의 가능 여부 미정', '시간 협의 가능한지 문의', '시간 협의 가능하지 않음']) {
+    for (const value of [clause, `09:00~18:00 (${clause})`, `09:00~18:00 · ${clause}`, `시간 협의 · ${clause}`]) {
+      assert.equal(scheduleMatch(`월~금 · ${value}`, 'all', 'negotiable'), 'unknown', value);
+      assert.equal(scheduleMatch(`월~금 · ${value}`, 'all', 'morning'), 'unknown', value);
+    }
+  }
+});
+
+test('complete positive negotiation formats still work without confusing the other dimension', () => {
+  for (const value of ['요일 협의 가능', '(요일 협의)', '월~금 (요일 협의 가능)', '주5일(요일 협의)', '근무요일: 협의 가능']) {
+    assert.equal(scheduleMatch(`${value} · 09:00~18:00`, 'negotiable', 'morning'), 'match', value);
+  }
+  for (const value of ['시간 협의 가능', '(시간 협의)', '근무시간: 협의 가능', '근무시간 협의', '시간 협의: 09:00~18:00',
+    '09:00~18:00 (시간 협의 가능)', '09:00~18:00 · 시간 협의']) {
+    assert.equal(scheduleMatch(`월~금 · ${value}`, 'weekdays', 'negotiable'), 'match', value);
+  }
+  assert.equal(scheduleMatch('요일 협의 불가 · 09:00~18:00', 'all', 'morning'), 'match');
+  assert.equal(scheduleMatch('월~금 · 시간 협의 불가', 'weekdays', 'all'), 'match');
+  assert.equal(scheduleMatch('요일 협의 · 시간 협의 불가', 'negotiable', 'all'), 'match');
+  assert.equal(scheduleMatch('월~금 · 09:00~18:00 (요일 협의)', 'negotiable', 'all'), 'match');
+  for (const label of ['휴게시간', '면접시간']) {
+    const value = `월~금 · 09:00~18:00 · ${label}: 협의`;
+    assert.equal(scheduleMatch(value, 'all', 'negotiable'), 'mismatch', value);
+    assert.equal(scheduleMatch(value, 'weekdays', 'morning'), 'match', value);
+  }
+  for (const nextDay of ['익일', '다음날', '다음 날']) {
+    assert.equal(scheduleMatch(`월~금 · 시간 협의: 23:00~07:00 (${nextDay})`, 'weekdays', 'negotiable'), 'match');
+  }
+});
+
+test('labelled negotiation conflicts include colons and clauses after clock ranges', () => {
+  for (const [value, days, time] of [
+    ['요일 협의 · 근무요일: 협의 불가 · 09:00~18:00', 'negotiable', 'all'],
+    ['월~금 · 시간 협의 · 근무시간: 협의 불가', 'all', 'negotiable'],
+    ['요일 협의 · 09:00~18:00 (요일 협의 불가)', 'negotiable', 'all'],
+    ['시간 협의 · 09:00~18:00 (근무시간: 협의 불가)', 'all', 'negotiable'],
+    ['요일 협의(불가)', 'negotiable', 'all'],
+    ['시간 협의(불가)', 'all', 'negotiable']
+  ]) assert.equal(scheduleMatch(value, days, time), 'unknown', value);
+});

@@ -10,6 +10,26 @@ const UNKNOWN = { kind: 'unknown' } as const;
 const NEGOTIABLE = { kind: 'negotiable' } as const;
 const segments = (text: string) => text.split(/[·ㆍ•|]/).map((part) => part.trim()).filter(Boolean);
 
+// Check every labelled clause, including after a clock range. A complete positive
+// clause may be wrapped in parentheses or followed by a range; extra wording is
+// unresolved, not affirmative evidence (e.g. "협의 불가" or "협의 가능 여부 미정").
+function labelledNegotiation(text: string, label: '요일' | '시간'): UnconfirmedEvidence | undefined {
+  let found = false;
+  for (const part of segments(text)) {
+    const clauses = part.matchAll(new RegExp(`(?<![가-힣])(?:근무\\s*)?${label}\\s*:?\\s*협의`, 'g'));
+    for (const clause of clauses) {
+      found = true;
+      const tail = part.slice(clause.index! + clause[0].length).trim()
+        .replace(/\(\s*(?:익일|다음\s*날)\s*\)$/, '').trim()
+        .replace(/\)+\s*$/, '').trim()
+        .replace(/\s*:?\s*\d{1,2}:\d{2}\s*[~〜～\-–—]\s*\d{1,2}:\d{2}$/, '').trim()
+        .replace(/\)+\s*$/, '').trim();
+      if (!/^(?:가능)?$/.test(tail)) return UNKNOWN;
+    }
+  }
+  return found ? NEGOTIABLE : undefined;
+}
+
 // Only complete day expressions are accepted: a date's "일" is never Sunday.
 function parseDays(value: string): DayEvidence {
   let text = value.trim().replace(/^근무\s*요일\s*:?\s*/, '').replace(/^매주\s*/, '');
@@ -42,10 +62,10 @@ function parseDays(value: string): DayEvidence {
 }
 
 function dayEvidence(text: string): DayEvidence {
+  const negotiation = labelledNegotiation(text, '요일');
+  if (negotiation) return negotiation;
   const evidence: DayEvidence[] = [];
   for (const part of segments(text)) {
-    // Explicit negotiation still applies when a nominal day range is also shown.
-    if (/요일\s*협의/.test(part)) { evidence.push(NEGOTIABLE); continue; }
     const clock = part.search(/\d{1,2}:\d{2}/);
     const candidate = (clock < 0 ? part : part.slice(0, clock)).trim();
     if (!candidate) continue;
@@ -63,14 +83,17 @@ function dayEvidence(text: string): DayEvidence {
 function timeEvidence(text: string): TimeEvidence {
   const ranges = [...text.matchAll(/(?<!\d)(\d{1,2}):(\d{2})\s*[~〜～\-–—]\s*(\d{1,2}):(\d{2})(?!\d)/g)];
   if (ranges.length > 1) return UNKNOWN;
-  const explicitNegotiation = /(?:근무\s*)?시간\s*협의/.test(text);
+  const parts = segments(text);
+  const negotiation = labelledNegotiation(text, '시간');
+  if (negotiation?.kind === 'unknown') return UNKNOWN;
+  const explicitNegotiation = negotiation?.kind === 'negotiable';
   if (!ranges.length) return explicitNegotiation ? NEGOTIABLE : UNKNOWN;
   if ([...text.matchAll(/\d{1,2}:\d{2}/g)].length !== 2) return UNKNOWN;
   const range = ranges[0];
   const [startHour, startMinute, endHour, endMinute] = [range[1], range[2], range[3], range[4]].map(Number);
   if (startHour > 23 || startMinute > 59 || endHour > 24 || endMinute > 59 || endHour === 24 && endMinute !== 0) return UNKNOWN;
 
-  const part = segments(text).find((segment) => segment.includes(range[0]))!;
+  const part = parts.find((segment) => segment.includes(range[0]))!;
   const index = part.indexOf(range[0]);
   const prefix = part.slice(0, index).trim();
   const suffix = part.slice(index + range[0].length)

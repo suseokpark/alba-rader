@@ -101,3 +101,17 @@ test('default filters reset all choices and count unknown opt-in only with a sch
   assert.equal(defaultJobFilters().payType, 'all');
   assert.deepEqual(ids(filterJobs([job('missing')], defaultJobFilters())), ['missing']);
 });
+
+test('negated and ambiguous negotiation cannot appear as a confirmed filter match', () => {
+  for (const [field, other, positive, negative, ambiguous] of [
+    ['days', 'time', '요일 협의 · 09:00~18:00', '월~금(요일 협의 불가) · 09:00~18:00', '요일 협의 가능 여부 미정 · 09:00~18:00'],
+    ['time', 'days', '월~금 · 시간 협의', '월~금 · 시간 협의 불가', '월~금 · 시간 협의 가능한지 문의']
+  ]) {
+    const jobs = [job('positive', { schedule: positive }), job('negative', { schedule: negative }), job('ambiguous', { schedule: ambiguous })];
+    const selected = filters({ [field]: 'negotiable', [other]: 'all' });
+    assert.deepEqual(ids(filterJobs(jobs, selected)), ['positive']);
+    assert.deepEqual(filterJobs(jobs, { ...selected, includeUnknownSchedule: true }).map(({ job, unverifiedSchedule }) => [job.id, unverifiedSchedule]),
+      [['positive', false], ['negative', true], ['ambiguous', true]]);
+    assert.deepEqual(ids(filterJobs(jobs, defaultJobFilters())), ['positive', 'negative', 'ambiguous']);
+  }
+});
