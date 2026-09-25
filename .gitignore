@@ -11,6 +11,8 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/dist
+/.sites-runtime
 
 # OS
 .DS_Store
