@@ -372,7 +372,7 @@
             {#if address}<button type="button" class="address-clear" disabled={searching} aria-label="선택한 주소 지우기" onclick={clearAddress}>×</button>{/if}
           </div>
         </div>
-        <div class="area-level-row"><label for="area-level">지역 단위 <select id="area-level" bind:this={areaLevelInput} bind:value={areaLevel} disabled={searching || scope === 'nationwide'} aria-describedby={scope === 'address' && address ? 'area-level-preview area-level-help' : 'area-level-help'}>{#each areaChoices as choice}<option value={choice.value}>{areaLevelNames[choice.value]}</option>{/each}</select></label>{#if scope === 'address' && address}<p class="area-preview" id="area-level-preview">검색할 지역: <strong>{areaLabel(address, areaLevel)}</strong></p>{/if}</div>
+        <div class="area-level-row"><label for="area-level">지역 단위 <select id="area-level" bind:this={areaLevelInput} bind:value={areaLevel} disabled={searching || scope === 'nationwide'} onchange={() => { validation = ''; }} aria-describedby={scope === 'address' && address ? 'area-level-preview area-level-help' : 'area-level-help'}>{#each areaChoices as choice}<option value={choice.value}>{areaLevelNames[choice.value]}</option>{/each}</select></label>{#if scope === 'address' && address}<p class="area-preview" id="area-level-preview">검색할 지역: <strong>{areaLabel(address, areaLevel)}</strong></p>{/if}</div>
         <p class="area-help" id="area-level-help">{baseAreaHelp(scope, areaLevel, address)} {daangnMultiEnabled ? '당근에는 아래 별도 동네 목록만 적용됩니다.' : '당근은 동·읍·면 범위에서 검색하거나, 아래에서 동네들을 별도로 선택할 수 있어요.'} 변경 후 검색 버튼을 눌러주세요.</p>
         <div class="daangn-area-picker">
           <div class="daangn-picker-heading">

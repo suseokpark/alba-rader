@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { createContext, runInContext } from 'node:vm';
 import ts from 'typescript';
+import { parse } from 'svelte/compiler';
 import { createSearchSnapshot, requestSearchSource, SearchRequestError } from '../src/lib/search-request.ts';
 import { appHandoffUrl } from '../src/lib/browser-handoff.ts';
 import { MAX_DAANGN_AREAS, addDaangnArea, aggregateDaangnResults, neighborhoodKey, toSearchArea } from '../src/lib/daangn-multi.ts';
 import * as daangnMulti from '../src/lib/daangn-multi.ts';
-import { areaLabel } from '../src/lib/search-area.ts';
+import { areaLabel, supportsSearchArea } from '../src/lib/search-area.ts';
 import { sources } from '../src/lib/search.ts';
 import { defaultJobFilters } from '../src/lib/filter-jobs.ts';
 
@@ -92,6 +93,166 @@ function harness(overrides = {}) {
     }
   };
 }
+
+function areaLevelTemplate() {
+  const component = parse(page, { modern: true });
+  let select;
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    if (node.type === 'RegularElement' && node.name === 'select'
+      && node.attributes.some((attribute) => attribute.type === 'Attribute' && attribute.name === 'id'
+        && attribute.value?.[0]?.data === 'area-level')) select = node;
+    for (const [key, value] of Object.entries(node)) if (!['loc', 'name_loc'].includes(key)) visit(value);
+  }
+  visit(component.fragment);
+  assert.ok(select, 'Use the actual area-level selector, not a copied recovery callback.');
+  return { select, component };
+}
+
+function changeAreaLevel(f, value) {
+  const { select } = areaLevelTemplate();
+  const binding = select.attributes.find((attribute) => attribute.type === 'BindDirective' && attribute.name === 'value');
+  assert.equal(binding?.expression.type, 'Identifier');
+  assert.equal(binding.expression.name, 'areaLevel');
+  f.state[binding.expression.name] = value;
+  const handler = select.attributes.find((attribute) => attribute.type === 'Attribute' && attribute.name === 'onchange')?.value?.expression;
+  // Before the fix there is no listener: model the actual binding-only behavior.
+  if (handler) runInContext(`(${page.slice(handler.start, handler.end)})`, f.state, { timeout: 1000 })({ currentTarget: { value } });
+}
+
+function currentPageDerived(f) {
+  const { component } = areaLevelTemplate();
+  const declarations = component.instance.content.body.flatMap((node) => node.type === 'VariableDeclaration' ? node.declarations : []);
+  const current = createContext({ ...f.state, supportsSearchArea });
+  for (const name of ['activeSources', 'draftSnapshot', 'queryValidation', 'hasDraftChanges']) {
+    const expression = declarations.find((node) => node.id?.name === name)?.init?.arguments?.[0];
+    assert.ok(expression, `Evaluate the page's actual ${name} expression.`);
+    current[name] = runInContext(`(${page.slice(expression.start, expression.end)})`, current, { timeout: 1000 });
+  }
+  return current;
+}
+
+test('restoring a supported area level clears the source error without replacing results or automatically requesting data', async () => {
+  const initial = { query: ' 카페 ', selected: ['daangn'], scope: 'address', address: { ...AREA },
+    areaLevel: 'neighborhood', daangnMultiEnabled: false, daangnAreas: [] };
+  const saved = createSearchSnapshot(initial);
+  assert.equal(saved.ok, true);
+  const previousLanes = [{ source: 'daangn', state: 'done', result: { source: 'daangn', status: 'ok',
+    jobs: [{ id: 'synthetic-old', title: '합성 기존 공고', url: 'https://jobs.daangn.com/job-posts/synthetic-old' }] } }];
+  const filters = { ...defaultJobFilters(), minHourly: 12000, include: '카페' };
+  const requested = [], signals = [];
+  const f = harness({ ...initial, areaLevel: 'district', lanes: previousLanes, appliedSnapshot: saved.snapshot,
+    submitted: '카페', submittedArea: saved.snapshot.label, filters, sortOrder: 'hourly-desc', generation: 7,
+    requestSearchSource: (snapshot, source, options) => requestSearchSource(snapshot, source, {
+      ...options, fetcher: async (url, init) => {
+        requested.push(new URL(url, 'http://localhost')); signals.push(init.signal);
+        return Response.json({ source: 'daangn', status: 'ok',
+          jobs: [{ id: 'synthetic-new', title: '합성 새 공고', url: 'https://jobs.daangn.com/job-posts/synthetic-new' }],
+          searchUrl: 'https://jobs.daangn.com/s?regionId=230&query=%EC%B9%B4%ED%8E%98', checkedAt: '2026-09-26T00:00:00.000Z' });
+      }
+    })
+  });
+  // A request boundary sentinel detects accidental abort/reset side effects.
+  // It is synthetic and is not evidence of a browser request in this scenario.
+  const retainedController = new AbortController();
+  f.state.controllers.set('alba', retainedController);
+  const preservedKeys = ['query', 'selected', 'scope', 'address', 'daangnMultiEnabled', 'daangnAreas', 'submitted',
+    'submittedArea', 'lanes', 'appliedSnapshot', 'filters', 'sortOrder', 'generation', 'controllers', 'attempts'];
+  const preserved = new Map(preservedKeys.map((key) => [key, f.state[key]]));
+  await f.search();
+  assert.equal(createSearchSnapshot(f.state).field, 'sources');
+  assert.match(f.state.validation, /업체.*하나 이상/);
+  assert.deepEqual(f.focus, ['sources']);
+  assert.equal(requested.length, 0);
+  assert.equal(retainedController.signal.aborted, false);
+
+  changeAreaLevel(f, 'neighborhood');
+  assert.equal(f.state.validation, '', 'A corrected supported-provider selection must not retain its old source error.');
+  const recovered = createSearchSnapshot(f.state);
+  assert.equal(recovered.ok, true);
+  assert.equal(recovered.snapshot.fingerprint, saved.snapshot.fingerprint);
+  const derived = currentPageDerived(f);
+  assert.deepEqual(Array.from(derived.activeSources), ['daangn']);
+  assert.equal(derived.draftSnapshot.ok, true);
+  assert.equal(derived.queryValidation, '');
+  assert.equal(derived.hasDraftChanges, false);
+  assert.equal(requested.length, 0, 'Changing the draft must not automatically resubmit.');
+  assert.equal(retainedController.signal.aborted, false);
+  assert.equal(f.state.controllers.get('alba'), retainedController);
+  assert.deepEqual(f.focus, ['sources'], 'Clearing feedback must not programmatically move focus.');
+  for (const [key, value] of preserved) assert.equal(f.state[key], value, key);
+
+  await f.search();
+  assert.equal(requested.length, 1, 'Only an explicit valid resubmission requests the selected provider.');
+  assert.equal(requested[0].searchParams.get('source'), 'daangn');
+  assert.equal(requested[0].searchParams.get('q'), '카페');
+  assert.equal(requested[0].searchParams.get('areaLevel'), 'neighborhood');
+  for (const key of ['sido', 'sigungu', 'bname', 'bcode', 'sigunguCode']) assert.equal(requested[0].searchParams.get(key), AREA[key]);
+  assert.equal(requested[0].searchParams.has('address'), false);
+  assert.equal(requested[0].searchParams.has('zonecode'), false);
+  assert.equal(retainedController.signal.aborted, true, 'Explicit search, unlike changing the draft, owns request replacement.');
+  assert.equal(signals[0].aborted, false);
+  assert.equal(f.state.lanes.length, 1);
+  assert.equal(f.state.lanes[0].result.jobs[0].id, 'synthetic-new');
+  assert.equal(f.state.appliedSnapshot.fingerprint, saved.snapshot.fingerprint);
+  assert.equal(f.state.filters, filters);
+  assert.equal(f.state.query, initial.query);
+  assert.equal(f.state.selected, initial.selected);
+});
+
+test('area-level recovery without an address clears stale source feedback but still validates the missing address on submit', async () => {
+  let requests = 0;
+  const f = harness({ selected: ['daangn'], address: null, areaLevel: 'district',
+    requestSearchSource: () => { requests++; throw new Error('Invalid conditions must not request data.'); } });
+  const lanes = f.state.lanes, snapshot = f.state.appliedSnapshot, generation = f.state.generation;
+  await f.search();
+  assert.equal(createSearchSnapshot(f.state).field, 'sources');
+  assert.match(f.state.validation, /업체.*하나 이상/);
+  changeAreaLevel(f, 'neighborhood');
+  assert.equal(f.state.validation, '');
+  const derived = currentPageDerived(f);
+  assert.deepEqual(Array.from(derived.activeSources), ['daangn']);
+  assert.equal(derived.draftSnapshot.ok, false);
+  assert.equal(derived.draftSnapshot.field, 'address');
+  assert.equal(derived.queryValidation, '');
+  assert.equal(requests, 0);
+  assert.deepEqual(f.focus, ['sources']);
+  assert.equal(f.state.lanes, lanes);
+  assert.equal(f.state.appliedSnapshot, snapshot);
+  assert.equal(f.state.generation, generation);
+
+  await f.search();
+  assert.equal(f.state.validation, derived.draftSnapshot.message);
+  assert.deepEqual(f.focus, ['sources', 'address']);
+  assert.equal(requests, 0, 'Clearing stale feedback must not bypass the remaining address requirement.');
+  assert.equal(f.state.lanes, lanes);
+  assert.equal(f.state.generation, generation);
+});
+
+test('area-level change only clears feedback and retains its native binding, loading lock and linked explanation', () => {
+  const { select } = areaLevelTemplate();
+  const attribute = (name) => select.attributes.find((item) => item.type === 'Attribute' && item.name === name);
+  const expression = (name) => attribute(name)?.value?.expression;
+  const evaluate = (value, state) => {
+    assert.ok(value);
+    return runInContext(`(${page.slice(value.start, value.end)})`, createContext(state), { timeout: 1000 });
+  };
+  for (const areaLevel of ['district', 'neighborhood']) {
+    const state = { validation: '합성 이전 오류', areaLevel };
+    evaluate(expression('onchange'), state)({ currentTarget: { value: 'neighborhood' } });
+    assert.equal(state.validation, '');
+    assert.equal(state.areaLevel, areaLevel, 'The listener must not overwrite or depend on native binding order.');
+  }
+  assert.equal(select.attributes.find((item) => item.type === 'BindDirective' && item.name === 'value')?.expression?.name, 'areaLevel');
+  assert.equal(select.attributes.find((item) => item.type === 'BindDirective' && item.name === 'this')?.expression?.name, 'areaLevelInput');
+  for (const [searching, scope, disabled] of [[false, 'address', false], [true, 'address', true], [false, 'nationwide', true]]) {
+    assert.equal(evaluate(expression('disabled'), { searching, scope }), disabled);
+  }
+  assert.equal(evaluate(expression('aria-describedby'), { scope: 'address', address: AREA }), 'area-level-preview area-level-help');
+  assert.equal(evaluate(expression('aria-describedby'), { scope: 'address', address: null }), 'area-level-help');
+  assert.equal(evaluate(expression('aria-describedby'), { scope: 'nationwide', address: AREA }), 'area-level-help');
+});
 
 for (const source of ['albamon', 'daangn', 'alba']) {
   test(`lane filter reset focuses ${source} after cards render and preserves the search`, async () => {

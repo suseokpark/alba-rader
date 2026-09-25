@@ -926,3 +926,17 @@ Cycle26은 앞 회차 최종316검사/check/build/실브라우저 결과를 유�
 다음후보:당근만선택·동범위에서구로전환→업체0오류→동으로복구할때planner는유효하고이전조건동일인데validation문구잔존. 독립실제함수/템플릿검사로재현(외부요청0),지역단위select가bind만있음. 실제브라우저확인은아직이며다음회차현재화면재현후수정여부결정할것. 이번확대구현않음. 종료11KST/마지막30분회귀전용유지.
 
 보고서QA:1280/390 모두이미지5/5로드·문서/section/figure/table가로넘침0,최종모바일대조화면·한계표시각검수. 글자/media/viewport정상복원,임시보고서tab26종료·기존앱tab2의03:07결과30건유지. HTML+인접이미지의로컬미리보기 http://127.0.0.1:5186/single-search-cycle30/query-recovery-review-202609260311.html . 보고서QA는자동검사333과분리한다.
+
+## Cycle31 — 2026-09-26 04:02~04:13 KST: 지역 단위 복구 시 이전 오류 해제
+
+시작04:02:17/소스04:08:16/기록04:11:36 시각확인. clean main8bee61f, 기존기록/git/memory 확인. product-design audit·diagnose·ego-browser·HTML시각화 사용. 독립 controller 재현/테스트·readonly diff검토 병행.
+
+- 실제tab2: 주소미지정·당근만선택·카페에서 동→구→제출(업체0오류)→동 복귀 후 활성당근1인데 이전 업체오류가 남는 모순2회 재현. 오류해제누락/업체파생상태/이전응답3가설. 활성상태정상·재현구간요청0으로 첫가설확인. 지역select에만 onchange로 validation해제 추가. 자동검색·주소보정·provider선택·snapshot·필터·통계·색/CSS변경없음.
+- 실제 controller/planner/derived/Svelte AST핸들러 회귀3개추가. 첫1RED(expected빈값 vs 실제업체오류)→패치후GREEN, 관련62/62→전체336/336PASS. 주소유효 합성fixture에서 동일fingerprint/기존결과·필터·입력·요청상태유지, 편집시요청0/abort0/초점추가0, 명시제출만모의1요청. 주소null이면정정후명시제출때주소검증유지. 타입0오류0경고/build+wrangler dry-run성공/diffcheck통과. 합성성공을실사용성공률로보고않음.
+- 현재브라우저390: native Space→ArrowUp→Enter로동확정,alert0/당근1/선택기초점3px·44px. 다음제출은주소오류와주소찾기초점·query/선택유지. 320x850/root32/reduce에서alert0/문서320/select56.5px·초점3px·transition0s.1280문서1280/select44/alert0,선택기문자대비13.98:1. 실기기/OS확대/스크린리더실발화미검증.
+- 수정전재현중이전03:07결과30href동일. 이후HMR/check/build에서초기화되어수정후실제결과보존은재조회하지않고합성회귀근거와구분. 최초ArrowUp만으로선택미확정(03),빌드후320글자16px복귀(06)관측은최종성공증거아님. 최종키보드04/확대07. CDP로관측한수정전/390후/최종320복구구간각요청0·truncatedfalse.
+- 산출물 artifacts/single-search-cycle31/area-recovery-review-202609260413.html,evidence-202609260413.md,01~08.jpg,unit/check/build.log. 실제작성04:13:43에맞춰파일명시각정렬. 4단계판정과한계분리,HTML은01/02/04/07/08이미지5개참조. 로컬서버5186재사용. 신규실공고/SDK/지도/상세조회0·카드클릭0·합성공고주입0·배포0. 사용자DB/권한/서버보존.
+
+검증소스1+테스트1+이기록만커밋/일반origin/main푸시하고원격SHA확인한다. 외부실검색/운영검증을하지않았으며기존알바천국Worker오류미해결. 다음후보:주소미지정제출에서390px초점버튼과하단오류문구의동시가시성측정;이번엔개발확대하지않음. 종료11KST/마지막30분회귀전용유지.
+
+보고서QA:1280/390 이미지5/5로드·문서/section/figure/table넘침0·현재회차근거이미지와합성/실제한계표시검수. rootfont/media/viewport복원확인(16px/inline없음/reducefalse/기본769),임시보고서tab27닫음. 앱tab2는카페·동범위·당근1선택·오류없음의준비상태이며HMR이전실결과를임의주입하거나재조회하지않음. 로컬미리보기 http://127.0.0.1:5186/single-search-cycle31/area-recovery-review-202609260413.html .
