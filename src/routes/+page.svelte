@@ -56,6 +56,7 @@
   const attempts = new Map<SourceId, number>();
   let generation = 0;
   const draftSnapshot = $derived(createSearchSnapshot({ query, selected, scope, address, areaLevel, daangnMultiEnabled, daangnAreas }));
+  const queryValidation = $derived(validation && !draftSnapshot.ok && draftSnapshot.field === 'query' ? validation : '');
   const hasDraftChanges = $derived(!!appliedSnapshot && (!draftSnapshot.ok || draftSnapshot.snapshot.fingerprint !== appliedSnapshot.fingerprint));
 
   const searching = $derived(lanes.some((lane) => lane.state === 'loading'));
@@ -356,9 +357,10 @@
     <form class="search-panel" onsubmit={(event) => { event.preventDefault(); void search(); }}>
       <label for="query"><span class="step-number" aria-hidden="true">1</span> 어떤 알바를 찾으세요?</label>
       <div class="search-field">
-        <input id="query" bind:this={queryInput} bind:value={query} onkeydown={handleQueryKeydown} oninput={() => { validation = ''; }} placeholder="예: 카페, 편의점, 주말" autocomplete="off" aria-invalid={queryTooLong ? 'true' : undefined} aria-describedby="query-hint query-length-hint" />
+        <input id="query" bind:this={queryInput} bind:value={query} onkeydown={handleQueryKeydown} oninput={() => { validation = ''; }} placeholder="예: 카페, 편의점, 주말" autocomplete="off" aria-invalid={queryTooLong || queryValidation ? 'true' : undefined} aria-describedby={queryValidation ? 'query-hint query-length-hint query-error' : 'query-hint query-length-hint'} />
         <button class="search-submit" type="submit" disabled={searching}>{#if searching}<span class="spinner" aria-hidden="true"></span> {finished}/{lanes.length} 조회 중{:else}{activeSources.length}개 업체 검색 <span aria-hidden="true">→</span>{/if}</button>
       </div>
+      {#if queryValidation}<p id="query-error" class="validation query-validation" role="alert">{queryValidation}</p>{/if}
       <p id="query-length-hint" class="query-length-hint" class:over-limit={queryTooLong} role="status">{queryTooLong ? '검색어가 80자를 넘었어요. 입력 내용은 잘리지 않으니, 검색할 내용을 줄여주세요.' : '검색어는 앞뒤 공백을 제외해 최대 80자까지 입력할 수 있어요.'}</p>
       <div class="area-controls">
         <div class="area-top"><span class="area-label"><span class="step-number" aria-hidden="true">2</span> 어디에서 일할까요?</span><div class="scope-options" aria-label="검색 범위"><button type="button" bind:this={scopeTrigger} aria-pressed={scope === 'address'} class:active={scope === 'address'} disabled={searching} onclick={() => { scope = 'address'; validation = ''; }}>주소 기준</button><button type="button" aria-pressed={scope === 'nationwide'} class:active={scope === 'nationwide'} disabled={searching} onclick={() => { scope = 'nationwide'; validation = ''; }}>전국</button></div></div>
@@ -399,7 +401,7 @@
         <details class="map-disclosure"><summary>지도 보기 안내</summary><p class="area-help map-help" id="map-help">지도 보기를 누르면 선택한 주소 또는 동네명을 카카오맵에 전달해 새 탭으로 검색합니다. 공고의 근무지나 검색 반경을 표시하는 기능은 아니에요.</p></details>
       </div>
       <div class="search-options"><div class="source-options" bind:this={sourceTrigger} aria-label="검색할 업체">{#each sources as source}<button type="button" class={`source-toggle ${source.id}`} class:chosen={activeSources.includes(source.id)} aria-pressed={activeSources.includes(source.id)} disabled={searching || !supportsSearchArea(source.id, scope, areaLevel, daangnMultiEnabled)} onclick={() => toggleSource(source.id)}><span aria-hidden="true">{activeSources.includes(source.id) ? '✓' : '+'}</span> {source.name}{#if source.id === 'daangn' && daangnMultiEnabled} · 별도 {daangnAreas.length}곳{:else if !supportsSearchArea(source.id, scope, areaLevel)} · 동네만 지원{/if}</button>{/each}</div><p id="query-hint">공고 목록이 이 화면에 표시됩니다.</p></div>
-      {#if validation}<p class="validation" role="alert">{validation}</p>{/if}
+      {#if validation && !queryValidation}<p class="validation" role="alert">{validation}</p>{/if}
       <button class="search-submit search-submit-bottom" type="submit" disabled={searching}>{#if searching}<span class="spinner" aria-hidden="true"></span> {finished}/{lanes.length} 조회 중{:else}선택한 {activeSources.length}개 업체 검색 <span aria-hidden="true">→</span>{/if}</button>
       <div class="search-actions">
         {#if searching}<button type="button" class="quiet-button" bind:this={stopButton} onclick={cancelFromButton}>조회 중단</button><p>확인된 결과는 남겨둬요. 진행 중인 서버 조회는 종료까지 잠시 걸릴 수 있어요.</p>{/if}

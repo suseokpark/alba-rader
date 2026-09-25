@@ -910,3 +910,19 @@ Cycle26은 앞 회차 최종316검사/check/build/실브라우저 결과를 유�
 - 앱 검색 제출0/공식 검색 문서1/상세0/지도0/주소SDK0/공고클릭0. 공식 페이지 부가 리소스 수는 측정하지 않음. 진단용 tab25 종료, 사용자 탭/기존30개 결과/DB/서버/권한 보존. viewport·media 변경 없음.
 
 이 접두어의 출처는 확인 완료하여 다음 회차 반복 진단하지 않는다. 다음은 미확인 주소·업체 적용 범위 설명 또는 입력 복구 흐름을 현재 화면에서 재현할 수 있을 때만 수정할 것. 알바천국 Worker 오류/운영 실제 검색 제한은 여전히 미해결이며 이번 확인으로 해결됐다고 보고하지 않는다. 종료11KST/마지막30분 회귀 전용 유지.
+
+## Cycle30 — 2026-09-26 03:00~03:11 KST: 입력칸 근처에서 검색어 오류 복구
+
+시작03:00:42/소스03:04:06/재수정03:06:24/기록직전 시각확인. clean maincf24a0e, docs/git/memory 먼저읽음. audit·diagnose·ego-browser·HTML시각화 사용, ProductDesign 저장context없음. 독립경계진단·회귀검사·diff읽기검토 병행.
+
+- 실제 기존탭2에서공백Enter:390x844 queryy293.5/alerty1056.9/aria-invalid없음·오류설명미연결. query초점복귀는정상. 하단전용오류/초점시점/긴검색어와처리차이3가설후전용하단위치와queryTooLong만invalid인구조확인. 제출은검증에서중단되어실검색불필요.
+- 기존draftSnapshot.field로queryValidation파생하여검색어오류만입력옆에rolealert1개표시,invalid/설명연결. 다른필드는기존하단오류·초점유지. 입력정정/초기화/검색validation수명,IME,요청·원문·필터·정렬·클릭통계불변. CSS는기존오류스타일재사용+여백1줄.
+- 신규4검사 실제planner/derived/template AST/oninput:첫3PASS1RED→7PASS. 중간333/check/build성공후320/root32에서error799~905/view850끝부분잘림발견. 오류를일반길이hint앞으로이동하도록순서검사6PASS1RED→GREEN. 최종333/333PASS(기존329+신규4),check0오류0경고,Cloudflare build/wrangler dry-run성공,diffcheck통과. 합성검사를사용자성공률로보고않음.
+- 최종실제320x850/root32/reduce:error646.625~752.625/문서320/queryfocus-visible3px/transition0s/alert1/invalidtrue. 390x844:error421.508~466.008,하단submit도query초점. 81자입력보존/기존live안내유지. 정정시alert0·invalidnull·오류설명해제. 주소미지정은기존일반alert/주소찾기초점. 기존오류색실측대비6.0862:1.1280도error409.695~454.195/넘침0. 실기기·OS확대·스크린리더실발화·모든IME미검증.
+- HMR/build가이전01:07결과를초기화하여최종정상회귀는03:07전국카페2업체1배치만실행(알바몬20/천국10). 이후공백오류→정정전후30href동일/기존제목유지. 앞회차결과와전체목록동일주장않음. invalid검증구간·최종결과내정정구간각CDPrequest0/truncatedfalse. 실제정상결과를Worker/운영해결증거로쓰지않음.
+- 산출물 artifacts/single-search-cycle30/query-recovery-review-202609260311.html,evidence-202609260311.md,01~08.jpg,unit/check/build-final.log. 04중간390/05중간확대실패는최종통과증거아님. HTML에는01/03/06/07/08현재회차이미지5개로4단계판정과한계분리. 기존보고서서버5186이용,새배포없음.
+
+외부앱검색제출Albamon1/Alba1(한배치,업스트림횟수단정않음),Daangn0/주소SDK0/지도0/상세0/공고클릭0/합성공고0. 글자·media·viewport복원,사용자탭/DB/서버/권한보존. 검증소스2+검사1+이문서만commit/일반push하고원격SHA확인. 배포않음.
+다음후보:당근만선택·동범위에서구로전환→업체0오류→동으로복구할때planner는유효하고이전조건동일인데validation문구잔존. 독립실제함수/템플릿검사로재현(외부요청0),지역단위select가bind만있음. 실제브라우저확인은아직이며다음회차현재화면재현후수정여부결정할것. 이번확대구현않음. 종료11KST/마지막30분회귀전용유지.
+
+보고서QA:1280/390 모두이미지5/5로드·문서/section/figure/table가로넘침0,최종모바일대조화면·한계표시각검수. 글자/media/viewport정상복원,임시보고서tab26종료·기존앱tab2의03:07결과30건유지. HTML+인접이미지의로컬미리보기 http://127.0.0.1:5186/single-search-cycle30/query-recovery-review-202609260311.html . 보고서QA는자동검사333과분리한다.

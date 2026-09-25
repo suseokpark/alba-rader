@@ -260,6 +260,7 @@ h1 em { color: #b6501f; }
 .source-toggle:disabled { opacity: .65; }
 #query-hint { color: var(--muted); font-size: .8rem; }
 .validation { color: #a13822; background: #fff0e9; border-radius: 9px; padding: 12px; }
+.query-validation { margin: 0 0 20px; }
 .search-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
 .search-submit-bottom { width: 100%; min-width: 0; margin-top: 18px; line-height: 1.5; }
 .quiet-button { border: 1px solid #d8cec3; border-radius: 10px; background: #fff; color: #605246; min-height: 44px; padding: 9px 13px; font-size: .8rem; }
