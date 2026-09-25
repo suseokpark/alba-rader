@@ -91,3 +91,46 @@ test('Alba explicit zero-count metadata still returns empty rather than an unava
   assert.equal(fetch.mock.callCount(), 1);
   assert.equal(result.message, '이 검색어에 해당하는 공고가 없어요.');
 });
+
+for (const finalUrl of [
+  'https://unexpected.invalid/search/Search?token=SYNTHETIC_SECRET',
+  'https://www.alba.co.kr/error/error_msg.asp?token=SYNTHETIC_SECRET',
+  'https://www.alba.co.kr/search/Search/'
+]) {
+  test(`Alba rejects unexpected final URL ${new URL(finalUrl).pathname} before parsing its body`, async (t) => {
+    let bodyReads = 0;
+    const fetch = t.mock.method(globalThis, 'fetch', async () => ({
+      ok: true, status: 200, url: finalUrl,
+      text: async () => { bodyReads++; return '<meta name="Description" content="관련 검색결과 총 0건의 채용정보">'; }
+    }));
+    const result = await searchAlba(query);
+    assertResult(result);
+    assert.equal(fetch.mock.callCount(), 1);
+    assert.equal(bodyReads, 0, 'An unrelated HTTP-200 page must not become empty results.');
+    assert.match(result.message, /검색 페이지로 연결되지/);
+    assert.doesNotMatch(JSON.stringify(result), /unexpected\.invalid|error_msg/);
+  });
+}
+
+test('Alba accepts only the existing case-insensitive search path contract', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (input) => {
+    const finalUrl = new URL(input);
+    finalUrl.pathname = '/SEARCH/search';
+    return responseWithUrl('<meta name="Description" content="관련 검색결과 총 0건의 채용정보">', finalUrl);
+  });
+  assertResult(await searchAlba(query), 'empty');
+});
+
+for (const finalUrl of ['', 'invalid-url']) {
+  test(`Alba missing or malformed final URL (${finalUrl || 'empty'}) keeps its cause unconfirmed`, async (t) => {
+    let bodyReads = 0;
+    t.mock.method(globalThis, 'fetch', async () => ({
+      ok: true, status: 200, url: finalUrl, text: async () => { bodyReads++; return secret; }
+    }));
+    const result = await searchAlba(query);
+    assertResult(result);
+    assert.equal(bodyReads, 0);
+    assert.match(result.message, /검색 결과를 확인하지 못/);
+    assert.doesNotMatch(result.message, /지연|연결되지|형식/);
+  });
+}

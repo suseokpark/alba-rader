@@ -314,10 +314,10 @@ h1 em { color: #b6501f; }
 .job-card:hover { border-color: var(--source-color); box-shadow: 0 5px 16px #65401b0a; }
 h4 { color: #39312b; line-height: 1.65; }
 .company { color: #68594c; }
-.location, .schedule { color: #837364; }
+.location, .schedule { color: #756555; }
 .external-icon { color: #8b7c6e; }
 .job-card .pay { color: #935123; }
-.detail-link { color: #8b715a; border-color: #efe7dd; }
+.detail-link { color: #795e48; border-color: #efe7dd; }
 .source-original { color: #716050; min-height: 44px; }
 .lane-message p, .loading-state { color: #807063; }
 .lane-filtered-empty { border-color: #d9cab7; }

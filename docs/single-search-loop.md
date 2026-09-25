@@ -814,3 +814,25 @@ OS클립보드/OSIME/실제페이지확대·실기기·스크린리더미검증.
 산출물 `artifacts/click-analytics-202609252312/` PNG01~04/evidence.md. 운영 배포 결과는 완료 후 별도 기록. 다음 기존우선후보는 알바천국 최종검색경로 불일치 원인, 작은글자 대비; 이번 클릭기능에서 임의 수정하지 않음.
 
 배포 확인23:14:36KST: 앱 소스 d997335bde5ab53d55741ae44cb50cdabe73f5b6 GitHub main push/readback 일치. Sites appgdep_6ab681c2880c81c28955c3463674e134 / version appgprj_6ab67d0a60b081c28edd0061a723f4ba~appgver_a73d350c137081c282d27635088bcd2b succeeded, URL https://alba-rader.worxphere.chatgpt.site . native read-only DB 확인에서 바인딩 DB/테이블 job_clicks/정확한7개필드/rows[]·has_more false: 운영 스키마 적용과 QA데이터 미혼입 확인. 운영 API→DB→통계UI 전체 경로는 로그인 승인대기로 미검증이며 DB관리도구 조회를 그 증거로 대체하지 않는다. 후속 문서커밋은 새 앱 배포가 아니다.
+
+## Cycle25 — 2026-09-25 23:16~23:29 KST: 카드 가독성과 알바천국 실행 환경 차이
+
+시작23:16:46/재개23:19:29/검사작성23:22:47/소스수정23:23:26/산출물23:27/기록23:29 KST 시각확인. docs/git/memory 먼저읽음, clean main6b0df54에서기존앱·클릭통계보존. audit·diagnose·ego-browser·HTML시각화 사용, ProductDesign 저장context없음. 독립읽기진단·diff검토병행.
+
+- 우선P1진단 가설공유: 공식경로변경/다른오류응답/실행환경URL처리. 실제Node provider전국카페1회23:20:27:200/최종원래search/Search/redirectedfalse/공식제목카페통합검색/jobNormal있음/10건. IAB17 개발화면동일조건2업체1배치:알바몬20/천국10(23:20). 이전Worker실패를개발화면전체장애로확대않음.
+- 동일URL/헤더/12초로 격리local workerd1회:200/redirectedtrue/final https://www.alba.co.kr/error/error_msg.asp /title알바천국/jobNormal없음. 요청옵션동일이나실행환경이외모든전송차이통제까지한것은아님. 오류페이지이동확인,이동결정원인·보안정책·운영서비스장애미확정. 정상path/origin검증완화·UA변경·우회·서비스부하재시도않음. provider불변. 초기Miniflare생성옵션2회실패는외부요청전/설치형선언의변환함수사용후실행/종료완료.
+- alba-failure.test에6개추가:다른origin/공식오류path/끝슬래시200→본문읽기0/unavailable,기존대소문자허용,빈·잘못된URL중립문구. 원문링크유지·민감문자비노출검사.6PASS는기존보호회귀이며외부오류해결아님.
+- P2 현재UI재현:주소·일정14px400 #837364/background#fffdf9 대비4.4921429241;상세안내12.8px400 #8b715a 대비4.4861867976. CSS마지막2규칙만 #756555/#795e48로변경. 실제computed대비5.5134334113/5.8928458260. 같은30개공고·같은스크롤위치전후PNG01/02. 따뜻한색감·크기·배치·업체순서/색·초점·실검색/분석통계불변.
+- job-card-contrast.test4개:3RED/1PASS→4PASS. 실제CSS AST기본선언과반올림없는상대휘도검사. 전체310/310PASS(기존300+신규10),check0오류0경고,CloudflareWorker build dry-run성공,diffcheck통과. 독립검토차단결함없음. 페이지전체접근성/실사용자성과검증아님.
+- 빌드개발갱신으로폼초기화확인후 모바일검증용전국카페알바몬만1회23:24조회20건.390/root16 doc390/대상텍스트넘침0/card279px높이(PNG03).320/root32/reduce doc320/텍스트넘침0/Tab첫카드active·focus-visible=true/outline3/offset-4/높이862.7/transition0s(PNG04). 실기기·실제OS확대·스크린리더발화는미검증.1280/root16/reducefalse복원·20카드잔존확인후임시탭17닫음.
+
+산출물 artifacts/single-search-cycle25/contrast-runtime-review-202609252327.html,evidence.md,PNG01~04.
+미리보기 http://127.0.0.1:5186/single-search-cycle25/contrast-runtime-review-202609252327.html
+HTML1280/390에서이미지4/4로드·문서/section/figure/table가로넘침0,제목/우선순위/모바일검증표시각검수.보고서QA는310자동검사와별도. 사용자tab1·2보존,인증대기13handoff유지. 기존오류임시tab15는목록에서없음(이번에조작/우회않음).
+
+외부공고요청Albamon2(app),Alba3(Node1/app1/격리Worker1),당근0/주소SDK0/원문상세0/지도0/합성공고0/클릭이벤트0. 작업소유격리Worker만실행·정리,기존서버보존.커밋·푸시·배포·인증·연락·지원·보안우회·수집확대없음.
+남은우선순위:P1 알바천국local Worker오류응답미해결/실제운영은로그인승인경계로미검증.개발10건정상을운영성공으로보고하지말것.같은실패반복외부조회보다다음미확인단발검색불편을우선할것.카드대비는완료되어다음회차새성과로재보고않음.자동화종료2026-09-26 11:00KST유지.
+
+## 수동 Git 저장 요청 — 2026-09-25 23:50 KST
+
+사용자 명시요청에 따라 Cycle25의 CSS·회귀검사2파일·이 문서만 커밋하여 기존 GitHub origin/main에 푸시한다. 이번 요청은 Git 저장만이며 Sites 재배포나 공개범위 변경은 하지 않는다. 독립 읽기검토에서 실제 비밀값·개인정보·무관변경 없음, 관련17개 검사 재실행 통과, diffcheck 통과. 로컬 DB·스크린샷·검증 산출물은 Git 제외 유지. 자동화의 no-push/no-deploy 제한은 변경하지 않는다.
