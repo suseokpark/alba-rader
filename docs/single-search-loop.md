@@ -776,3 +776,21 @@ OS클립보드/OSIME/실제페이지확대·실기기·스크린리더미검증.
 서버관리·푸시·배포·인증·지원·연락·보안우회·수집확대없음. 기존자동화/2026-09-26 11KST종료유지.
 
 보고서QA:첫이동0px캡처실패후명시1280설정/AX현재화면으로복원.1280/390px이미지6/6·문서/section/figure/table넘침0,제목/우선순위/모바일검증표시각검수. viewportreset/임시tab12종료/사용자tab1·2만보존확인. 최종빌드이후사용자tab1 DOM은검색어공백/카드0/root16/reducefalse(개발갱신초기화앞서관찰). 외부조회추가반복않음;마지막실제20건은22:40조회/수정후PNG03·06·07이며최종탭상태로주장않음. 보고서QA는294자동검사와별도.
+
+## 수동 배포·다음 점검 — 2026-09-25 22:52~23:03 KST
+
+사용자 명시요청 ‘푸시 하고 배포 후에 다음 개선 사항 확인’으로 이번 수동 작업만 push/배포 허용. 기존 자동화의 no-push/no-deploy와 9월26일11시 종료는 유지한다. Sites hosting 및 audit·ego-browser·HTML시각화 사용. 실제 변경 전 시각 확인.
+
+- private GitHub suseokpark/alba-rader/main: 기능개선49파일84c78b0 push, 독립 게시범위 점검에서 실제secret/무관파일없음. 문서의 로컬사용자절대경로 일반화. artifacts/이미지/실조회데이터/인증토큰 제외.
+- 기존배포없음. Vercel 인증없어 시작된로그인대기 작업소유프로세스만종료. Sites appgprj_6ab67d0a60b081c28edd0061a723f4ba를소유자전용으로1회등록. .openai/hosting.json에는ID만,credential은메모리/stdin만사용.
+- 기존프레임워크보존, build시에만공식Cloudflare어댑터7.2.9사용. wrangler4.140.0 dry-run으로dist/server/index.js defaultfetch와dist/client생성. dev는기존adapter-auto유지. package/lock/설정/README변경을nativeworkflow로7adb436cef954347d232964e1f80e6cd0c72a732에commit/소스push,같은SHA GitHub push/readback확인.
+- 배포appgdep_6ab67dde924c81c29b693bf287bb8aef / version appgprj_6ab67d0a60b081c28edd0061a723f4ba~appgver_67200589b8b481c2a956aa0e4d0b7a21는22:57:59KST succeeded. URL https://alba-rader.worxphere.chatgpt.site . 게시성공과실검색성공은별도.
+- 자동294/294PASS/check0오류0경고/Worker빌드성공. 로컬workerd5187루트200/잘못된검색400. npm audit --omit=dev 0건; 설치전체개발포함low4건(강제업데이트않음).
+- 배포URL은IAB13로그인경계. ‘ChatGPT로계속’ 뒤 기본프로필공유계정선택에서멈추고사용자승인질문. 임의계정선택/프로필전달/권한확대없음. 프로덕션검색은미검증. open_in_codex결과queued이며이미열렸다고단정않음.
+- 같은배포소스의로컬Worker IAB14에서전국카페1배치22:59:알바몬20/알바천국실패. 천국만1회재시도도 ‘검색페이지로연결되지않았어요’ 동일안내. 소스상최종origin/path검증분기이며실제이동대상·차단원인미확정. 보안검증완화/우회금지. 알바몬20유지. 이로컬실패를배포서버장애로단정않음.
+- 실제computed:주소/일정14px #837364 on #fffdf9 대비4.4921429,상세링크12.8px #8b715a 대비4.4861868. 일반텍스트4.5기준소폭미달(W3C SC1.4.3 반올림금지확인). 이번UI수정없음.
+- 390문서390/20카드위치넘침0/Tab초점3px·offset-4유지. 실제공개요청Albamon1/Alba2/Daangn0/주소SDK0/원문상세0/합성API0. 스크린리더·실기기·사용자성과미측정.
+
+다음우선순위: P1 알바천국 최종검색경로미일치 원인 진단(작은글자보다우선), P2 카드주소·일정·상세글자대비. 프로덕션실검색은사용자로그인승인후검증. 이번추가요청은확인이므로UI개선은아직구현하지않음.
+산출물 artifacts/deployment-202609252257/deployment-review-202609252301.html,evidence.md,PNG01~04(로컬Worker임을명시). 보고서1280/390이미지3/3·문서/section/figure/table넘침0,우선순위표시각검수. 임시검증tab14종료/viewport복원/인증대기tab13handoff/사용자tab1·2보존.
+이 단락은 배포 이후의 문서 기록이다. 실제 배포 소스는7adb436이며 후속 문서만의 커밋을 새 앱 배포로 보고하지 않는다.
