@@ -150,6 +150,24 @@ test('each lane has a stable bound heading for programmatic focus without adding
     'The heading must survive loading, error and cancelled branches instead of being recreated inside one.');
 });
 
+test('filtered-empty recovery invokes the lane focus handler once with its own source', () => {
+  const buttons = all.filter(({ node, ancestors }) => node.name === 'button'
+    && ancestors.some((item) => hasClass(item, 'lane-filtered-empty')));
+  assert.equal(buttons.length, 1);
+  const button = buttons[0].node;
+  assert.equal(staticAttribute(button, 'type'), 'button');
+  assert.equal(textOf(button), '필터 초기화');
+  const click = attribute(button, 'onclick')?.value?.expression;
+  assert.ok(click);
+  for (const source of ['albamon', 'daangn', 'alba']) {
+    const calls = [];
+    const context = { lane: { source }, resetLaneFilters: (value) => calls.push(value) };
+    evaluate(click, context)();
+    assert.deepEqual(calls, [source]);
+    assert.equal('filters' in context, false, 'The template must not bypass the focus handler.');
+  }
+});
+
 test('explicit cancellation uses its focus wrapper and a stable bound results heading', () => {
   const buttons = all.filter(({ node }) => node.name === 'button' && textOf(node) === '조회 중단');
   assert.equal(buttons.length, 1);

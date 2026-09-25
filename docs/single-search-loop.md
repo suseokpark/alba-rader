@@ -836,3 +836,29 @@ HTML1280/390에서이미지4/4로드·문서/section/figure/table가로넘침0,�
 ## 수동 Git 저장 요청 — 2026-09-25 23:50 KST
 
 사용자 명시요청에 따라 Cycle25의 CSS·회귀검사2파일·이 문서만 커밋하여 기존 GitHub origin/main에 푸시한다. 이번 요청은 Git 저장만이며 Sites 재배포나 공개범위 변경은 하지 않는다. 독립 읽기검토에서 실제 비밀값·개인정보·무관변경 없음, 관련17개 검사 재실행 통과, diffcheck 통과. 로컬 DB·스크린샷·검증 산출물은 Git 제외 유지. 자동화의 no-push/no-deploy 제한은 변경하지 않는다.
+
+## Cycle26 — 2026-09-26 00:00~00:13 KST: 필터0건 복구의 키보드 초점
+
+시작00:00:44/검사00:06:05/소스00:07:03/보완검사00:10:38/최종소스00:11:00/산출물00:13:01 KST 시각확인. docs/git/memory 먼저읽음, clean main fbad405에서 기존앱·클릭통계보존. audit·diagnose·ego-browser·HTML시각화 사용, ProductDesign 저장context없음. 읽기전용 독립 필터경계/최종diff검토 병행. heartbeat이므로 commit/push/deploy 없음.
+
+- 실제 IAB 임시tab21 전국카페알바몬만00:02조회20건. 최소시급20000→0/20에서 업체바로가기→제목→Tab→필터초기화 Enter.20건은돌아오나 activeElement=BODY/focus-visiblefalse. 다음Tab은첫카드로가므로 페이지처음부터재탐색한다고과장않음. PNG01/02로재현.
+- 가설:사라지는버튼의초점인계누락/전체영역재생성/브라우저초점행동. 기존inline filters대입만있음,업체h3는key=source/분기밖에유지됨(기존AST검사). 결과·조건복구는정상. 초점인계원인으로좁힘.
+- 첫수정 focus→reset/preventScroll은5신규RED→PASS,315전체/check/build성공,데스크톱·390초점확인. 그러나320/root32/reduce에서focusedheading y=-14829/viewport850/scrollY20528로화면밖. DOM초점성공을시각성공으로대체하지않고다시수정. PNG06은중간실패증거.
+- 최종:resetLaneFilters가 filters초기화→await tick→현재laneHeadings[source]?.focus(). 화면높이변경뒤스크롤허용. 제거된옛요소참조보존않음. 3사갱신순서검사중간코드대상3RED→PASS,미바인딩/대기중제거/실제button연결포함총6신규. VM/AST이며브라우저검사아님.
+- 최종316/316PASS(기존310회귀),check0오류0경고,CloudflareWorker build/wrangler dry-run성공,diffcheck통과. 실제검색/필터해석/정렬/업체순서색/통계/CSS변경없음. 독립최종diff차단결함없음.
+- 빌드/HMR초기화후00:11최종알바몬20건으로320/root32/reduce 재검증:heading y251.95–305.95/viewport850/focus-visibletrue/document320,다음Tab첫공고119345886 y197.14/3px초점/전환0s.390/root16 heading y402.59/doc390.1280/root16 heading y452.48/doc1280. 필터전후20개href배열동일,query카페/sortsource유지. 최종PNG07/08/09. CDP요청관찰은최종검색후필터조작시작~3해상도끝까지0events/nottruncated. 실기기·실제브라우저확대·스크린리더·운영은미검증.
+- 390초기화버튼88.30×44,320/root32 150.58×61.5. 캡처04초기버전은device-metrics/native이미지축척불일치로보고서에쓰지않음. 초기03/05는중간구현,06은실패,최종근거는07/08/09만. CSS글자/media/viewport복원후임시탭정리,사용자탭보존.
+
+산출물 artifacts/single-search-cycle26/filter-recovery-review-202609260013.html,evidence.md,PNG01~09(중간/실패/최종구분상기),unit-final/check-final/build-final.log.
+미리보기 http://127.0.0.1:5186/single-search-cycle26/filter-recovery-review-202609260013.html
+
+외부요청 Albamon3(기초/중간빌드/최종빌드각1),Alba0/Daangn0/주소SDK0/원문상세0/지도0/클릭이벤트0.합성공고삽입0.기존로컬DB보존,서버재시작/권한변경/인증/지원/연락/보안우회/수집확대없음.
+다음우선후보(독립읽기/실제함수합성입력재현,실공고빈도미확인):①schedule-filters 부분문자열이 ‘요일 협의 불가’/‘시간 협의 불가’를협의필터확정일치로포함(unverifiedfalse).부정/모호절해석을보수적으로검사할것.②‘시급 １５，０００원’은NFKC필터에통과하지만raw hourlyPay정렬에서12000뒤로밀림.공통정규화경계확인.이번임의확대구현않음.③기존알바천국localWorker오류미해결/운영실검색미검증.현재운영로그인상태는이번조회않았으므로이전승인대기로단정금지.자동화종료2026-09-26 11KST유지.
+
+보고서QA:1280/390에서이미지5/5로드,문서·section·figure·table가로넘침0,제목/증거표시각검수.설정복원·이번임시tab21/22종료,기존tab1/2/13/18/19/20보존.목록상13은계정선택·18은배포앱제목이지만둘다이번조작/로그인/실검색검증없음.기록은운영인증여부단정에쓰지않음.최종추적변경4파일(소스1/검사2/docs1),산출물은git제외.
+
+## 사용자 운영 기준 변경 — 2026-09-26 00:25 KST
+
+‘모든 개발이 끝나면 무조건 푸시하고 다음 점검’ 명시 요청으로, 이후 각 완료 회차는 검증된 이 프로젝트 코드·검사·기록을 커밋하고 기존 origin/main에 일반 푸시한다. 기존 자동화9-26-11의 GitHub 푸시 금지만 대체하며 종료11시/배포금지/기능범위/조용한 알림 기준은 유지한다. 비밀값·로컬DB·실조회데이터·이미지·무관한 사용자 변경은 제외하고, 미완료/실패 코드·강제푸시·임의이력재작성은 허용하지 않는다. 원격SHA를 확인하며 충돌·권한 차단은 변경을 보존하고 알린다.
+
+Cycle26은 앞 회차 최종316검사/check/build/실브라우저 결과를 유지하고 이번에 관련68개 재실행 통과 및 diff검토 후 먼저 커밋·푸시한다. 다음 Cycle27은 기록된 협의부정/시급정규화 입력 경계만 별도 개선한다. 배포는 이번 요청에 포함하지 않는다.

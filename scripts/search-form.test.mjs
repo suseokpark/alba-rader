@@ -93,6 +93,51 @@ function harness(overrides = {}) {
   };
 }
 
+for (const source of ['albamon', 'daangn', 'alba']) {
+  test(`lane filter reset focuses ${source} after cards render and preserves the search`, async () => {
+    const filters = { ...defaultJobFilters(), minHourly: 20000, include: '카페' };
+    const lanes = [{ source, state: 'done', result: { jobs: [] } }];
+    const appliedSnapshot = { query: '이전 검색' };
+    const f = harness({ filters, lanes, appliedSnapshot, sortOrder: 'hourly-desc', generation: 4 });
+    const preservedKeys = ['query', 'selected', 'scope', 'address', 'areaLevel', 'daangnMultiEnabled',
+      'daangnAreas', 'submitted', 'submittedArea', 'lanes', 'appliedSnapshot', 'sortOrder', 'generation',
+      'controllers', 'attempts', 'validation'];
+    const preserved = new Map(preservedKeys.map((key) => [key, f.state[key]]));
+    const moves = [];
+    f.state.laneHeadings[source] = { focus(options) {
+      assert.deepEqual(f.state.filters, defaultJobFilters(), 'Focus after the restored cards change layout.');
+      moves.push({ source, preventScroll: options?.preventScroll });
+    } };
+    const pending = f.state.resetLaneFilters(source);
+    assert.deepEqual(moves, [], 'Wait for the restored layout before scrolling focus into view.');
+    assert.deepEqual(f.state.filters, defaultJobFilters());
+    assert.equal(f.ticks(), 1);
+    f.finishTick();
+    await pending;
+    assert.deepEqual(moves, [{ source, preventScroll: undefined }], 'Allow the browser to reveal offscreen focus.');
+    assert.deepEqual(f.focus, [], 'Do not jump to the query or global results heading.');
+    for (const [key, value] of preserved) assert.equal(f.state[key], value, key);
+  });
+}
+
+test('lane filter reset still clears only filters when its heading binding is unavailable', async () => {
+  const f = harness({ filters: { ...defaultJobFilters(), minHourly: 20000 } });
+  const pending = f.state.resetLaneFilters('albamon');
+  f.finishTick();
+  await pending;
+  assert.deepEqual(f.state.filters, defaultJobFilters());
+  assert.deepEqual(f.focus, []);
+});
+
+test('lane filter reset does not focus a heading removed while awaiting the render', async () => {
+  const f = harness({ laneHeadings: { albamon: { focus() { assert.fail('The old heading was removed.'); } } } });
+  const pending = f.state.resetLaneFilters('albamon');
+  f.state.laneHeadings.albamon = null;
+  f.finishTick();
+  await pending;
+  assert.deepEqual(f.focus, []);
+});
+
 test('clearing a base address preserves nationwide scope and separate neighborhoods, then focuses address after tick', async () => {
   const neighborhoods = [{ ...AREA }];
   const f = harness({ scope: 'nationwide', areaLevel: 'city', daangnMultiEnabled: true, daangnAreas: neighborhoods, validation: '이전 오류' });
