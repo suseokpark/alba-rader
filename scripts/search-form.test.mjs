@@ -6,9 +6,10 @@ import ts from 'typescript';
 import { parse } from 'svelte/compiler';
 import { createSearchSnapshot, requestSearchSource, SearchRequestError } from '../src/lib/search-request.ts';
 import { appHandoffUrl } from '../src/lib/browser-handoff.ts';
+import { createPostcodeSearch, selectedAddress } from '../src/lib/postcode.ts';
 import { MAX_DAANGN_AREAS, addDaangnArea, aggregateDaangnResults, neighborhoodKey, toSearchArea } from '../src/lib/daangn-multi.ts';
 import * as daangnMulti from '../src/lib/daangn-multi.ts';
-import { areaLabel, supportsSearchArea } from '../src/lib/search-area.ts';
+import { areaLabel, normalizeAreaLevel, supportsSearchArea } from '../src/lib/search-area.ts';
 import { sources } from '../src/lib/search.ts';
 import { defaultJobFilters } from '../src/lib/filter-jobs.ts';
 
@@ -94,6 +95,34 @@ function harness(overrides = {}) {
       state.postcodeHandoffInput = null;
     }
   };
+}
+
+function postcodeFlowHarness(t, purpose) {
+  const frames = [];
+  const embedded = deferred();
+  const requests = [];
+  const sdk = { Postcode: class {
+    constructor(options) { this.options = options; }
+    embed() { frames.push(this.options); embedded.resolve(); }
+  } };
+  // Only the SDK boundary is synthetic. Both the picker generation management
+  // and the page's status/completion/close callbacks are their real functions.
+  const picker = createPostcodeSearch({ load: async () => sdk, timeoutMs: 10_000 });
+  const f = harness({ selected: purpose === 'base' ? ['albamon'] : ['daangn'], address: null,
+    daangnMultiEnabled: purpose === 'daangn', daangnAreas: [],
+    postcodeSearch: picker, postcodeContainer: { replaceChildren() {} }, selectedAddress, normalizeAreaLevel,
+    fetch: () => { requests.push('fetch'); throw new Error('Address editing must not fetch listings.'); },
+    requestSearchSource: () => { requests.push('source'); throw new Error('Address editing must not request a source.'); } });
+  f.state.postcodeDialog.open = false;
+  const plan = createSearchSnapshot(f.state);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.field, purpose === 'base' ? 'address' : 'daangnAreas');
+  f.state.validation = plan.message;
+  t.after(() => { picker.close(); f.finishTick(); });
+  const data = { ...AREA, roadAddress: AREA.address, jibunAddress: '서울 마포구 동교동',
+    userSelectedType: 'R', bname1: '' };
+  return { ...f, frames, requests, data,
+    async open() { f.state.openAddressSearch(purpose); await embedded.promise; } };
 }
 
 function areaLevelTemplate() {
@@ -492,6 +521,105 @@ test('the current page exposes its postcode URL-copy lifecycle handlers', () => 
   const f = harness();
   assert.equal(typeof f.state.resetPostcodeCopy, 'function');
   assert.equal(typeof f.state.copyPostcodeAppUrl, 'function');
+});
+
+for (const purpose of ['base', 'daangn']) test(`a ${purpose} completion after native close but before the queued close handler cannot apply an address`, async (t) => {
+  const f = postcodeFlowHarness(t, purpose);
+  await f.open();
+  const before = { address: f.state.address, areas: f.state.daangnAreas, validation: f.state.validation,
+    lanes: f.state.lanes, filters: f.state.filters };
+  // Explicitly simulate the native-close task gap. This checks a defensive
+  // ordering, not evidence that the vendor/browser produced that ordering.
+  f.state.postcodeDialog.open = false;
+  f.frames[0].oncomplete(f.data);
+  assert.equal(f.state.address, before.address, 'A closed picker must not apply a base address.');
+  assert.equal(f.state.daangnAreas, before.areas, 'A closed picker must not append a separate neighborhood.');
+  assert.equal(f.state.validation, before.validation, 'Cancellation is not a valid address selection.');
+  assert.equal(f.state.lanes, before.lanes);
+  assert.equal(f.state.filters, before.filters);
+  assert.equal(f.state.generation, 0);
+  assert.deepEqual(f.requests, []);
+  assert.deepEqual(f.focus, []);
+  const closed = f.state.addressDialogClosed();
+  f.finishTick();
+  await closed;
+  assert.deepEqual(f.focus, [purpose === 'base' ? 'address' : 'daangnAreas']);
+});
+
+for (const purpose of ['base', 'daangn']) test(`a current open ${purpose} picker still applies one valid selection and clears validation without searching`, async (t) => {
+  const f = postcodeFlowHarness(t, purpose);
+  await f.open();
+  assert.equal(f.state.postcodeDialog.open, true);
+  const actualClose = f.state.closeAddressSearch;
+  let closing;
+  // Observe the real handler's returned promise; completion intentionally does
+  // not return it, and a single host microtask is not a cross-VM render barrier.
+  f.state.closeAddressSearch = (...args) => { closing = actualClose(...args); return closing; };
+  const before = { address: f.state.address, areas: f.state.daangnAreas, lanes: f.state.lanes,
+    filters: f.state.filters, selected: f.state.selected };
+  f.frames[0].oncomplete(f.data);
+  await f.whenTick;
+  const chosen = selectedAddress(f.data);
+  if (purpose === 'base') {
+    assert.deepEqual(f.state.address, chosen);
+    assert.equal(f.state.daangnAreas, before.areas);
+  } else {
+    assert.equal(f.state.address, before.address);
+    assert.deepEqual(f.state.daangnAreas, [toSearchArea(chosen)]);
+  }
+  assert.equal(f.state.validation, '');
+  assert.equal(createSearchSnapshot(f.state).ok, true);
+  assert.equal(f.state.postcodeDialog.open, false);
+  assert.equal(f.state.lanes, before.lanes);
+  assert.equal(f.state.filters, before.filters);
+  assert.equal(f.state.selected, before.selected);
+  assert.equal(f.state.appliedSnapshot, null);
+  assert.equal(f.state.generation, 0);
+  assert.deepEqual(f.requests, []);
+  assert.deepEqual(f.focus, [], 'Return focus still waits for the real close handler render boundary.');
+  const accepted = { address: f.state.address, areas: f.state.daangnAreas };
+  f.frames[0].oncomplete({ ...f.data, roadAddress: 'ignored duplicate fixture' });
+  assert.equal(f.state.address, accepted.address);
+  assert.equal(f.state.daangnAreas, accepted.areas);
+  f.finishTick();
+  assert.ok(closing);
+  await closing;
+  assert.deepEqual(f.focus, [purpose === 'base' ? 'address' : 'daangnAreas']);
+});
+
+for (const handler of ['closeAddressSearch', 'addressDialogClosed']) test(`${handler} tolerates teardown while awaiting the close render without focusing removed controls`, async (t) => {
+  const f = postcodeFlowHarness(t, 'daangn');
+  await f.open();
+  if (handler === 'addressDialogClosed') f.state.postcodeDialog.open = false;
+  const beforeValidation = f.state.validation;
+  const closing = f.state[handler]();
+  await f.whenTick;
+  f.destroy();
+  f.state.addressTrigger = null;
+  f.state.daangnTrigger = null;
+  f.finishTick();
+  await assert.doesNotReject(closing, 'A pending close must not dereference a cleared dialog binding.');
+  assert.deepEqual(f.focus, []);
+  assert.deepEqual(f.requests, []);
+  assert.equal(f.state.validation, beforeValidation);
+});
+
+for (const handler of ['closeAddressSearch', 'addressDialogClosed']) test(`${handler} is safe when invoked after dialog bindings have already been destroyed`, async (t) => {
+  const f = postcodeFlowHarness(t, 'daangn');
+  await f.open();
+  const beforeValidation = f.state.validation;
+  f.destroy();
+  f.state.addressTrigger = null;
+  f.state.daangnTrigger = null;
+  const closing = f.state[handler]();
+  f.finishTick();
+  await assert.doesNotReject(closing, 'A queued or explicit close must tolerate an already-cleared dialog binding.');
+  f.frames[0].oncomplete(f.data);
+  assert.equal(f.state.validation, beforeValidation);
+  assert.equal(f.state.address, null);
+  assert.equal(f.state.daangnAreas.length, 0);
+  assert.deepEqual(f.focus, []);
+  assert.deepEqual(f.requests, []);
 });
 
 test('postcode copying ignores an absent URL and suppresses another click while its request is pending', async () => {

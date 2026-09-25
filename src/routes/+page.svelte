@@ -90,6 +90,8 @@
     void postcodeSearch.open(postcodeContainer, {
       status: (state, message) => { postcodeStatus = state; postcodeError = message || ''; },
       complete: (data) => {
+        // Native close queues its event; ignore selection before that cleanup runs.
+        if (!postcodeDialog?.open) return;
         const chosen = selectedAddress(data);
         if (postcodePurpose === 'daangn') addNeighborhood(chosen);
         else {
@@ -107,19 +109,19 @@
     resetPostcodeCopy();
     postcodeSearch.close();
     postcodeStatus = 'idle';
-    postcodeDialog.close();
+    postcodeDialog?.close();
     await tick();
-    if (!postcodeDialog.open) focusAddressTrigger();
+    if (postcodeDialog && !postcodeDialog.open) focusAddressTrigger();
   }
 
   async function addressDialogClosed() {
     // A queued close event must not cancel a newer dialog opened in the meantime.
-    if (postcodeDialog.open) return;
+    if (!postcodeDialog || postcodeDialog.open) return;
     resetPostcodeCopy();
     postcodeSearch.close();
     postcodeStatus = 'idle';
     await tick();
-    if (!postcodeDialog.open) focusAddressTrigger();
+    if (postcodeDialog && !postcodeDialog.open) focusAddressTrigger();
   }
 
   function focusAddressTrigger() {
