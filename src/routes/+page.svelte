@@ -421,7 +421,7 @@
     {#if !submitted}
       <div class="ready-grid">{#each sources as source}<div class={`ready-card ${source.id}`}><span class="source-dot"></span><h3>{source.name}</h3><p>{source.hint}</p><span class="ready-label">검색 대기</span></div>{/each}</div>
     {:else}
-      <div class="result-grid">
+      <div class="result-grid" style:--result-columns={Math.max(1, lanes.length)}>
         {#each filteredLanes as lane (lane.source)}
           {@const source = sources.find((item) => item.id === lane.source)!}
           {@const result = lane.result}

@@ -141,6 +141,8 @@ h2 { font-size: 1.4rem; line-height: 1.4; letter-spacing: -.04em; margin: 0; ove
 .progress { color: #60766a; margin: 0; font-size: .875rem; white-space: nowrap; }
 .progress strong { color: #254f38; }
 .ready-grid, .result-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/* Size by the submitted lanes, including loading/empty/failed results. */
+.result-grid { grid-template-columns: repeat(var(--result-columns, 3), minmax(0, 1fr)); }
 .daangn { --source-color: #e87445; }
 .albamon { --source-color: #4280bd; }
 .alba { --source-color: #9768b4; }

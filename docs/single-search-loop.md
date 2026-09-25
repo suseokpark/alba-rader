@@ -882,3 +882,19 @@ Cycle26은 앞 회차 최종316검사/check/build/실브라우저 결과를 유�
 외부 앱 검색 제출 Albamon3(수정 중/빌드 이후 포함), Alba0/Daangn0/주소SDK0/상세0/지도0/공고클릭0. 마지막 제출은00:32결과를 반환해 실제 업스트림3회라고 주장하지 않는다. 로컬 DB·클릭 통계·서버 프로세스·인증·접근범위 불변. 이번 변경6파일만 검증 후 일반 commit/push하고 원격SHA를 확인한다. 배포하지 않는다.
 
 다음 후보: 1280에서 한 업체만 선택해도 결과 열이 약1/3폭에 머무르는 화면을 관찰(PNG01); 단독검색 가독성/스크롤 부담 개선 여부를 다음 audit에서 확인할 것. 아직 실패나 사용자 성공률로 판정하지 않았다. 기존 알바천국 Worker 오류/운영 실제 검색 제한은 미해결이며 이번에 운영 상태를 새로 단정하지 않는다. 종료2026-09-26 11:00KST/마지막30분 회귀 전용 유지.
+
+## Cycle28 — 2026-09-26 01:01 이후: 표시 업체 수에 맞는 결과 폭
+
+시작01:01:46/소스수정01:05:09/산출물01:12:57KST 시각확인. clean main3f24006, docs/git/memory 먼저확인. audit·diagnose·ego-browser·HTML시각화 사용, ProductDesign 저장context없음. 독립 읽기검토/회귀검사 작성 병행. 기존 탭2의 공란 폼부터 점검, 사용자 탭/DB/서버 보존.
+
+- 실제 전국카페 알바몬20건(01:02),1280에서 result-grid1200px/결과열388px/388px트랙3개/실제 mounted업체1개 확인·현재스크린샷01 저장. 고정3열/업체max-width/빈업체칸 가설 제시 후 고정CSS repeat3 원인 확인. 검색은 작동하지만 읽는 폭을 불필요하게 제한하는 P2로 판단, 실제 사용자 성과는 측정하지 않음.
+- 소스3줄만: result-grid에 style:--result-columns={Math.max(1, lanes.length)}, 기본CSS의 repeat변수. 미제출 activeSources/성공업체수/공고수 아닌 현재lanes길이 기준. 모바일680px 이하1fr override/ready3열/keyed source순서/카드/브랜드색/검색·필터·정렬·클릭통계 그대로.
+- 새 result-grid-layout.test4개: 초기style directive부재 RED→GREEN. 0fallback/1/2/3, draft독립, loading/error/cancelled/empty/filter0 길이유지, 상태분기밖section/keyed each, mobile선언우선순위. AST/VM/CSS검사이며실제기하아님. 전체329/329PASS(기존325회귀),check0오류0경고,Cloudflare build/wrangler dry-run성공,diffcheck통과. 독립최종읽기검토차단사항없음.
+- 최종빌드후폼초기화로01:06 알바몬20건재조회:결과열1200/한트랙. 재조회로순서·목록변경(원문내용동일공고19개)이있으므로 전후전체동일이나사용자속도향상으로보고않음. 미제출 알바천국선택시기존1200/20건·이전조건안내유지. 실제2업체제출(01:07)은조회중부터각591px,완료알바몬20/천국10. minHourly20000→0/20·0/10에도각591유지. 전검색ready는388×3/몬→당근→천국 확인,3업체실제조회는이번미실행.
+- 390:doc390/열358/업체세로순서/초기화88.289×44. Enter초기화후30건복구·title-albamon focus-visible y174.695. 320/root32/reduce:doc320/열288/카드링크가로넘침0/첫카드초점3px·y107.844/transition0s. 680→한열648,681→두열310.5,1280→두열591;각30건유지. root16/reducefalse/viewport원복. 실기기·OS확대·스크린리더·전체WCAG미검증.
+- 산출물 artifacts/single-search-cycle28/result-width-review-202609260112.html,evidence.md,01~05.jpg,unit/check/build.log. 캡처실제바이트JPEG임을확인해확장자만맞춤,재압축/편집없음. 미리보기 http://127.0.0.1:5186/single-search-cycle28/result-width-review-202609260112.html . 전후화면과4단계판정/한계분리. 개발30건정상은기존Worker천국오류해결/운영정상증거아님.
+
+외부 앱검색제출 Albamon3/Alba1(업스트림횟수단정않음),Daangn0/주소SDK0/지도0/상세0/공고클릭0/합성공고0. DB·접근권한·인증·수집범위·서버프로세스불변. 검증된소스2+신규검사1+이문서만commit/일반push하고원격SHA확인. 배포않음.
+다음우선후보:현재천국실제목록주소에 ‘전남광주’ 접두어를관찰. 제한된원문대조로수집값/표시조합원인을구분할것;추정수정하지않음. 11KST종료/마지막30분회귀전용유지.
+
+보고서QA:1280/390에서이미지5/5로드/문서·section·figure·table가로넘침0/제목·전후비교 시각확인.설정복원및임시보고서tab24닫음,기존앱tab2는30건유지하고보존.공유/배포/권한변경없음.보고서QA는329자동검사와분리.
