@@ -812,3 +812,5 @@ OS클립보드/OSIME/실제페이지확대·실기기·스크린리더미검증.
 - Sites 현재 owner/custom/allowed owner1/groups0 확인, audience 변경없음. 통계GET은 별도앱관리자인증이 아니라 소유자전용 Sites게이트에 의존. 향후 공개전환 전 조회권한 분리 필요. 운영 로그인은 기존 사용자승인 대기중이며 임의 로그인/프로필공유 안 함.
 
 산출물 `artifacts/click-analytics-202609252312/` PNG01~04/evidence.md. 운영 배포 결과는 완료 후 별도 기록. 다음 기존우선후보는 알바천국 최종검색경로 불일치 원인, 작은글자 대비; 이번 클릭기능에서 임의 수정하지 않음.
+
+배포 확인23:14:36KST: 앱 소스 d997335bde5ab53d55741ae44cb50cdabe73f5b6 GitHub main push/readback 일치. Sites appgdep_6ab681c2880c81c28955c3463674e134 / version appgprj_6ab67d0a60b081c28edd0061a723f4ba~appgver_a73d350c137081c282d27635088bcd2b succeeded, URL https://alba-rader.worxphere.chatgpt.site . native read-only DB 확인에서 바인딩 DB/테이블 job_clicks/정확한7개필드/rows[]·has_more false: 운영 스키마 적용과 QA데이터 미혼입 확인. 운영 API→DB→통계UI 전체 경로는 로그인 승인대기로 미검증이며 DB관리도구 조회를 그 증거로 대체하지 않는다. 후속 문서커밋은 새 앱 배포가 아니다.
