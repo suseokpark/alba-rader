@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:search": "node scripts/smoke-search.mjs",
-		"test:unit": "node --experimental-strip-types --test scripts/search-options.test.mjs scripts/postcode-lifecycle.test.mjs scripts/filter-jobs.test.mjs scripts/schedule-filters.test.mjs"
+		"test:multi": "node --experimental-strip-types scripts/smoke-daangn-multi.mjs",
+		"test:unit": "node --experimental-strip-types --test scripts/*.test.mjs"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",

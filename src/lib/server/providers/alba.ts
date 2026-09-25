@@ -1,13 +1,14 @@
 import { load } from 'cheerio';
-import type { JobListing, SearchArea, SearchOptions, SearchResult } from '../../search';
+import type { AreaLevel, JobListing, SearchArea, SearchOptions, SearchResult } from '../../search';
 
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
 const areaCodeUrl = 'https://www.alba.co.kr/rsc/js/_AreaCode.js';
 let areaCache: { expiresAt: number; data: Record<string, unknown> } | undefined;
 
 type AlbaArea = { value: string; label: string };
+class UnsupportedAlbaAreaError extends Error {}
 
-async function resolveArea(area: SearchArea, signal: AbortSignal): Promise<AlbaArea | undefined> {
+async function resolveArea(area: SearchArea, level: AreaLevel, signal: AbortSignal): Promise<AlbaArea | undefined> {
 	let data = areaCache?.expiresAt && areaCache.expiresAt > Date.now() ? areaCache.data : undefined;
 	if (!data) {
 		const response = await fetch(areaCodeUrl, { signal });
@@ -35,18 +36,46 @@ async function resolveArea(area: SearchArea, signal: AbortSignal): Promise<AlbaA
 	if (!province || !/^\d{2,3}$/.test(province.ARCD) || province.ARCD === '99') return;
 	const districts = data[`ARCD_${province.ARCD}`];
 	if (!Array.isArray(districts)) return;
+	const names = districts.flatMap((entry) =>
+		entry && typeof entry.GUCD === 'string' ? [normalize(entry.GUCD)] : []
+	);
+	const buildArea = (selectedNames: string[], label: string): AlbaArea | undefined => {
+		// The official picker permits at most five comma-separated region selections.
+		if (!selectedNames.length) return;
+		if (selectedNames.length > 5) {
+			throw new UnsupportedAlbaAreaError('이 시 전체는 알바천국에서 한 번에 선택할 수 있는 지역 수(5개)를 넘어요. 구·군 또는 시·도 범위로 검색해 주세요.');
+		}
+		return {
+			value: selectedNames.map((name) => `${province.ARCD}||${name},`).join(''),
+			label
+		};
+	};
+	if (level === 'province') {
+		return names.includes('전체')
+			? buildArea(['전체'], `${province.ARNM} 전체 · 시·도 기준`)
+			: undefined;
+	}
 	const sigungu = normalize(area.sigungu);
 	// Sejong has no subordinate city/district in this official search selector.
 	const districtName = province.ARCD === '044' && !sigungu ? '전체' : sigungu;
-	const district = districts.find((entry) => entry && entry.GUCD === districtName);
-	if (!district) return;
-	return {
-		// Verified from public WNTopSearch.js: ARCD + '||' + GUCD + ','.
-		value: `${province.ARCD}||${district.GUCD},`,
-		label: district.GUCD === '전체'
-			? `${province.ARNM} 전체 · 시 기준`
-			: `${province.ARNM} ${district.GUCD} · 시·군·구 기준`
-	};
+	if (!names.includes(districtName)) return;
+	if (level === 'city') {
+		// Postal city+ward names (e.g. 수원시 영통구) share a city prefix in the source list.
+		const cityName = districtName.match(/^(.+?[시군])(?:\s|$)/)?.[1];
+		if (cityName) {
+			const cityDistricts = names.filter((name) => name === cityName || name.startsWith(`${cityName} `));
+			return buildArea(cityDistricts, `${province.ARNM} ${cityName} 전체 · ${cityName.endsWith('군') ? '군' : '시'} 기준`);
+		}
+		// A metropolitan ward has no intermediate city: 서울 마포구 expands to 서울 전체.
+		if (names.includes('전체') && /(?:특별시|광역시|세종시)$/.test(province.FUNM)) {
+			return buildArea(['전체'], `${province.ARNM} 전체 · 시 기준`);
+		}
+		return;
+	}
+	const label = districtName === '전체'
+		? `${province.ARNM} 전체 · 시 기준`
+		: `${province.ARNM} ${districtName} · 시·군·구 기준`;
+	return buildArea([districtName], level === 'neighborhood' ? `${label} (동 단위 미지원)` : label);
 }
 
 /** Read the same public search HTML served to an anonymous visitor. */
@@ -72,12 +101,12 @@ export async function searchAlba(query: string, options: SearchOptions = { scope
 		const signal = AbortSignal.timeout(12_000);
 		let selectedArea: AlbaArea | undefined;
 		if (options.scope === 'address') {
-			selectedArea = options.area ? await resolveArea(options.area, signal) : undefined;
+			selectedArea = options.area ? await resolveArea(options.area, options.areaLevel ?? 'neighborhood', signal) : undefined;
 			if (!selectedArea) {
 				return {
 					...result,
 					regionNote: '선택 지역 연결 불가',
-					message: '선택한 주소를 알바천국의 시·군·구에 연결하지 못했어요. 원문에서 지역을 선택해 주세요.'
+					message: '선택한 주소와 검색 범위를 알바천국의 지역 조건에 연결하지 못했어요. 원문에서 지역을 선택해 주세요.'
 				};
 			}
 			url.searchParams.set('hidArea', selectedArea.value);
@@ -153,7 +182,18 @@ export async function searchAlba(query: string, options: SearchOptions = { scope
 			return { ...result, status: 'empty', message: '이 검색어에 해당하는 공고가 없어요.' };
 		}
 		return { ...result, message: '알바천국 검색 결과를 읽지 못했어요. 원문에서 확인해 주세요.' };
-	} catch {
-		return { ...result, message: '알바천국 조회가 지연되거나 연결되지 않았어요. 다시 검색해 주세요.' };
+	} catch (error) {
+		if (error instanceof UnsupportedAlbaAreaError) {
+			return { ...result, regionNote: '선택 지역 범위 미지원', message: error.message };
+		}
+		if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+			return { ...result, message: '알바천국 응답이 늦어 조회를 마치지 못했어요. 잠시 후 이 업체만 다시 시도해 주세요.' };
+		}
+		if (error instanceof SyntaxError) {
+			return { ...result, message: '알바천국에서 받은 정보의 형식을 읽지 못했어요. 원문 검색 결과에서 확인해 주세요.' };
+		}
+		// A generic error can also occur while reading a response, not only connecting.
+		// Do not claim a network cause or expose raw upstream error details.
+		return { ...result, message: '알바천국 검색 결과를 확인하지 못했어요. 이 업체만 다시 시도하거나 원문 검색 결과에서 확인해 주세요.' };
 	}
 }

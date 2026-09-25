@@ -4,6 +4,7 @@ import { searchDaangn } from '$lib/server/providers/daangn';
 import { searchAlbamon } from '$lib/server/providers/albamon';
 import { searchAlba } from '$lib/server/providers/alba';
 import type { SearchArea, SearchOptions, SearchResult, SourceId } from '$lib/search';
+import { parseAreaLevel } from '$lib/search-area';
 
 const providers: Record<SourceId, (query: string, options: SearchOptions) => Promise<SearchResult>> = {
   daangn: searchDaangn,
@@ -28,6 +29,8 @@ export const GET: RequestHandler = async ({ url }) => {
   if (scope !== 'nationwide' && scope !== 'address') {
     return json({ message: '검색 범위를 확인해주세요.' }, { status: 400 });
   }
+  const areaLevel = parseAreaLevel(url.searchParams.get('areaLevel'));
+  if (!areaLevel) return json({ message: '지원하는 지역 단위를 선택해주세요.' }, { status: 400 });
   let area: SearchArea | undefined;
   if (scope === 'address') {
     const read = (key: string) => (url.searchParams.get(key) || '').trim();
@@ -38,7 +41,7 @@ export const GET: RequestHandler = async ({ url }) => {
       return json({ message: '주소 검색에서 기준 주소를 다시 선택해주세요.' }, { status: 400 });
     }
   }
-  const options: SearchOptions = { scope, ...(area && { area }) };
+  const options: SearchOptions = { scope, ...(area && { area, areaLevel }) };
 
   const key = JSON.stringify([source, query, options]);
   let entry = cache.get(key);
@@ -52,10 +55,11 @@ export const GET: RequestHandler = async ({ url }) => {
   }
   try {
     const result = await entry.result;
-    if (result.status === 'unavailable') cache.delete(key);
+    // An evicted request may finish after a newer request has claimed this key.
+    if (result.status === 'unavailable' && cache.get(key) === entry) cache.delete(key);
     return json(result, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
-    cache.delete(key);
+    if (cache.get(key) === entry) cache.delete(key);
     return json({ message: '조회에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 502 });
   }
 };

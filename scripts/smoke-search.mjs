@@ -46,6 +46,38 @@ await Promise.all(Object.keys(expectedHosts).map(async source => {
   }
 }));
 
+const suwon = { scope: 'address', sido: '경기', sigungu: '수원시 영통구', bname: '이의동', bcode: '4111710300', sigunguCode: '41117' };
+const broadCases = [
+  { area, areaLevel: 'district', name: '마포구', albamon: ['I130'], alba: ['02||마포구'] },
+  { area, areaLevel: 'province', name: '서울', albamon: ['I000'], alba: ['02||전체'] },
+  { area: suwon, areaLevel: 'district', name: '수원시 영통구', albamon: ['B201'], alba: ['031||수원시 영통구'] },
+  { area: suwon, areaLevel: 'city', name: '수원시', albamon: ['B180', 'B201', 'B190', 'B200'], alba: ['031||수원시 권선구', '031||수원시 영통구', '031||수원시 장안구', '031||수원시 팔달구'] },
+  { area: suwon, areaLevel: 'province', name: '경기', albamon: ['B000'], alba: ['031||전체'] }
+];
+for (const entry of broadCases) {
+  await Promise.all(['albamon', 'alba'].map(async source => {
+    const response = await fetch(`${base}/api/search?${new URLSearchParams({ q: '카페', source, ...entry.area, areaLevel: entry.areaLevel })}`);
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.status, 'ok', `${source}/${entry.name}: ${result.message}`);
+    assert.ok(result.jobs.length > 0 && result.jobs.length <= 20);
+    assert.ok(result.regionNote.includes(entry.name));
+    const params = new URL(result.searchUrl).searchParams;
+    const actual = (params.get(source === 'albamon' ? 'areas' : 'hidArea') || '').split(',').filter(Boolean).sort();
+    assert.deepEqual(actual, [...entry[source]].sort(), 'Every requested area, and no unrequested area, must be included');
+    if (entry.areaLevel === 'city') assert.ok(result.jobs.every(job => job.location?.includes('수원')));
+    console.log(`${source}: ${entry.name}/${entry.areaLevel} ${result.jobs.length} live results`);
+  }));
+}
+for (const areaLevel of ['district', 'city', 'province']) {
+  const response = await fetch(`${base}/api/search?${new URLSearchParams({ q: '카페', source: 'daangn', ...area, areaLevel })}`);
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.status, 'unavailable');
+  assert.equal(result.jobs.length, 0, 'A broad scope must not silently reuse a cached neighborhood');
+  assert.equal(new URL(result.searchUrl).searchParams.has('regionId'), false);
+}
+
 for (const query of [
   new URLSearchParams({ source: 'daangn', q: '' }),
   new URLSearchParams({ source: '__proto__', q: '카페' }),
@@ -53,9 +85,12 @@ for (const query of [
   new URLSearchParams({ source: 'daangn', q: 'x'.repeat(81) }),
   new URLSearchParams({ source: 'daangn', q: '카페', scope: 'address' }),
   new URLSearchParams({ source: 'daangn', q: '카페', ...area, bcode: '2641010500' }),
-  new URLSearchParams({ source: 'alba', q: '카페', scope: 'invalid' })
+  new URLSearchParams({ source: 'alba', q: '카페', scope: 'invalid' }),
+  new URLSearchParams({ source: 'albamon', q: '카페', ...area, areaLevel: 'invalid' }),
+  new URLSearchParams({ source: 'alba', q: '카페', ...area, areaLevel: '' }),
+  new URLSearchParams({ source: 'albamon', q: '카페', scope: 'address', areaLevel: 'province' })
 ]) {
   const response = await fetch(`${base}/api/search?${query}`);
   assert.equal(response.status, 400, 'Invalid input must not trigger an upstream lookup');
 }
-console.log('PASS: address-filtered three-source search, nationwide, invalid address, official detail links.');
+console.log('PASS: neighborhood, district, whole city, province, nationwide, unsupported scopes, invalid input, official links.');

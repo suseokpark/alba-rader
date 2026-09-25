@@ -16,6 +16,10 @@ export interface JobFilters {
   includeUnknownSchedule: boolean;
 }
 
+export type JobFilterKey = keyof JobFilters;
+export interface JobFilterChip { key: JobFilterKey; label: string }
+export interface FilterResultSummary { loaded: number; visible: number; unverifiedSchedule: number }
+
 export function defaultJobFilters(): JobFilters {
   return { payType: 'all', minHourly: 0, days: 'all', time: 'all', include: '', exclude: '', includeUnknownSchedule: false };
 }
@@ -33,13 +37,39 @@ function payType(pay?: string): Exclude<PayType, 'all'> | undefined {
 }
 
 export function activeFilterCount(filters: JobFilters): number {
-  const scheduleActive = filters.days !== 'all' || filters.time !== 'all';
-  return [
-    filters.payType !== 'all', validMinimum(filters.minHourly),
-    filters.days !== 'all', filters.time !== 'all',
-    tokens(filters.include).length > 0, tokens(filters.exclude).length > 0,
-    scheduleActive && filters.includeUnknownSchedule
-  ].filter(Boolean).length;
+  return activeFilterChips(filters).length;
+}
+
+/** One removable chip per filter field; keyword groups retain their AND/OR meaning. */
+export function activeFilterChips(filters: JobFilters): JobFilterChip[] {
+  const chips: JobFilterChip[] = [];
+  const payLabels: Record<PayType, string> = { all: '전체', hourly: '시급', daily: '일급', weekly: '주급', monthly: '월급', annual: '연봉', task: '건당' };
+  const dayLabels: Record<DayFilter, string> = { all: '전체', weekdays: '평일만', weekends: '주말만', negotiable: '협의' };
+  const timeLabels: Record<TimeFilter, string> = { all: '전체', morning: '오전 06–12시', afternoon: '오후 12–18시', evening: '저녁 18–24시', overnight: '새벽 00–06시', negotiable: '시간 협의' };
+  if (filters.payType !== 'all') chips.push({ key: 'payType', label: `급여 ${payLabels[filters.payType]}` });
+  if (validMinimum(filters.minHourly)) chips.push({ key: 'minHourly', label: `최소 시급 ${filters.minHourly.toLocaleString('ko-KR')}원` });
+  if (filters.days !== 'all') chips.push({ key: 'days', label: `요일 ${dayLabels[filters.days]}` });
+  if (filters.time !== 'all') chips.push({ key: 'time', label: `시작 ${timeLabels[filters.time]}` });
+  for (const key of ['include', 'exclude'] as const) {
+    const selected = tokens(filters[key]);
+    if (selected.length) chips.push({ key, label: `${key === 'include' ? '포함' : '제외'} ${selected.join(', ')}` });
+  }
+  if ((filters.days !== 'all' || filters.time !== 'all') && filters.includeUnknownSchedule) {
+    chips.push({ key: 'includeUnknownSchedule', label: '요일·시간 미확인 포함' });
+  }
+  return chips;
+}
+
+/** Normalize dependent UI choices without changing filtering semantics for existing callers. */
+export function updateJobFilters(filters: JobFilters, changes: Partial<JobFilters>): JobFilters {
+  const next = { ...filters, ...changes };
+  if (next.payType !== 'all' && next.payType !== 'hourly') next.minHourly = 0;
+  if (next.days === 'all' && next.time === 'all') next.includeUnknownSchedule = false;
+  return next;
+}
+
+export function clearJobFilter(filters: JobFilters, key: JobFilterKey): JobFilters {
+  return updateJobFilters(filters, { [key]: defaultJobFilters()[key] });
 }
 
 /** Filter only the already-loaded listings, without changing their source order. */

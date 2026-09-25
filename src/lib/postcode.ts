@@ -22,6 +22,7 @@ interface PostcodeData {
 interface PostcodeOptions {
   oncomplete: (data: PostcodeData) => void;
   onresize?: (size: { width: number; height: number }) => void;
+  onsearch?: (data: { q: string; count: number }) => void;
   width: string;
   height: string;
   focusInput: boolean;
@@ -42,32 +43,55 @@ declare global {
 }
 
 let sdkPromise: Promise<PostcodeNamespace> | undefined;
+let sdkOwner: object | undefined;
 
 export function loadPostcode(): Promise<PostcodeNamespace> {
   const available = window.kakao?.Postcode ? window.kakao : window.daum;
   if (available?.Postcode) return Promise.resolve(available);
   if (sdkPromise) return sdkPromise;
-  sdkPromise = new Promise<PostcodeNamespace>((resolve, reject) => {
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => fail(), 12_000);
-    const fail = () => {
-      clearTimeout(timeout);
-      script.remove();
-      sdkPromise = undefined;
-      reject(new Error('주소 검색 서비스에 연결하지 못했어요. 잠시 후 다시 시도해주세요.'));
-    };
+  const owner = {};
+  let resolveLoad!: (api: PostcodeNamespace) => void;
+  let rejectLoad!: (error: Error) => void;
+  const pending = new Promise<PostcodeNamespace>((resolve, reject) => {
+    resolveLoad = resolve;
+    rejectLoad = reject;
+  });
+  // Install ownership before touching the DOM, including synchronous failures.
+  sdkPromise = pending;
+  sdkOwner = owner;
+  let settled = false;
+  let script: HTMLScriptElement | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const cleanup = () => {
+    clearTimeout(timeout);
+    if (script) { script.onload = null; script.onerror = null; }
+  };
+  const fail = () => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    script?.remove();
+    // A late callback from an abandoned script cannot reset a newer request.
+    if (sdkOwner === owner) { sdkPromise = undefined; sdkOwner = undefined; }
+    rejectLoad(new Error('주소 검색 서비스에 연결하지 못했어요. 잠시 후 다시 시도해주세요.'));
+  };
+  try {
+    script = document.createElement('script');
+    timeout = setTimeout(fail, 12_000);
     script.src = 'https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
     script.async = true;
     script.onerror = fail;
     script.onload = () => {
+      if (settled) return;
       const api = window.kakao?.Postcode ? window.kakao : window.daum;
       if (!api?.Postcode) return fail();
-      clearTimeout(timeout);
-      resolve(api);
+      settled = true;
+      cleanup();
+      resolveLoad(api);
     };
     document.head.append(script);
-  });
-  return sdkPromise;
+  } catch { fail(); }
+  return pending;
 }
 
 export function selectedAddress(data: PostcodeData): SelectedAddress {
@@ -82,7 +106,7 @@ export function selectedAddress(data: PostcodeData): SelectedAddress {
   };
 }
 
-export type PostcodeStatus = 'loading' | 'retrying' | 'ready' | 'error';
+export type PostcodeStatus = 'loading' | 'delayed' | 'ready' | 'error';
 interface PostcodeEvents {
   status: (state: PostcodeStatus, message?: string) => void;
   complete: (data: PostcodeData) => void;
@@ -109,49 +133,55 @@ export function createPostcodeSearch({ load = loadPostcode, timeoutMs = 8_000 } 
       try {
         const sdk = await load();
         if (session !== generation) return;
-        let activeAttempt = 0;
-        const render = (attempt: number) => {
-          activeAttempt = attempt;
-          let ready = false;
-          let completed = false;
-          const current = () => session === generation && attempt === activeAttempt;
-          const fail = () => {
-            if (!current()) return;
-            activeAttempt += 1;
-            stopTimer();
-            element.replaceChildren();
-            events.status('error', '주소 검색 화면에 연결하지 못했어요. 다시 시도해주세요. 계속 열리지 않으면 일반 브라우저에서 이 페이지를 열어주세요.');
-          };
-          element.replaceChildren();
-          if (attempt > 0) events.status('retrying');
-          timer = setTimeout(() => {
-            if (!current() || ready) return;
-            if (attempt === 0) render(1);
-            else fail();
-          }, timeoutMs);
-          try {
-            new sdk.Postcode({
-              width: '100%', height: '100%', focusInput: true, submitMode: false,
-              // The real iframe sends an initial resize after its own UI initializes.
-              // Script.onload and iframe.onload alone are not proof that it is usable.
-              onresize: (size) => {
-                if (!current() || ready || size.width <= 0 || size.height <= 0) return;
-                ready = true;
-                stopTimer();
-                events.status('ready');
-              },
-              oncomplete: (data) => {
-                if (!current() || completed) return;
-                completed = true;
-                stopTimer();
-                events.complete(data);
-              }
-            }).embed(element, { autoClose: false });
-          } catch { fail(); }
+        let active = true;
+        let ready = false;
+        const current = () => session === generation && active;
+        const markReady = () => {
+          if (!current() || ready) return;
+          ready = true;
+          stopTimer();
+          events.status('ready');
         };
-        render(0);
+        const fail = () => {
+          if (!current()) return;
+          active = false;
+          stopTimer();
+          element.replaceChildren();
+          events.status('error', '주소 검색 화면을 열지 못했어요. 다시 시도해주세요. 계속 열리지 않으면 일반 브라우저에서 이 페이지를 열어주세요.');
+        };
+        element.replaceChildren();
+        timer = setTimeout(() => {
+          if (!current() || ready) return;
+          timer = undefined;
+          // No callback is not proof of a broken iframe. Keep any visible form
+          // and entered text intact; only an explicit open() replaces it.
+          events.status('delayed', '주소 검색 화면의 응답 확인이 늦어지고 있어요. 화면이 보이면 그대로 검색해주세요. 비어 있으면 다시 시도하거나 일반 브라우저에서 이 페이지를 열어주세요.');
+        }, timeoutMs);
+        try {
+          new sdk.Postcode({
+            width: '100%', height: '100%', focusInput: true, submitMode: false,
+            // Kakao documents resize as a size-change callback, not a guaranteed
+            // initial-ready event. Script/iframe load alone also proves no usability.
+            onresize: (size) => {
+              if (!Number.isFinite(size?.width) || !Number.isFinite(size?.height) || size.width <= 0 || size.height <= 0) return;
+              markReady();
+            },
+            // The documented search callback precedes resize. Zero results still
+            // prove a completed search; do not retain or log the address query.
+            onsearch: (data) => {
+              if (typeof data?.q !== 'string' || !Number.isInteger(data.count) || data.count < 0) return;
+              markReady();
+            },
+            oncomplete: (data) => {
+              if (!current()) return;
+              active = false;
+              stopTimer();
+              events.complete(data);
+            }
+          }).embed(element, { autoClose: false });
+        } catch { fail(); }
       } catch {
-        if (session === generation) events.status('error', '주소 검색 서비스에 연결하지 못했어요. 다시 시도해주세요.');
+        if (session === generation) events.status('error', '주소 검색 서비스에 연결하지 못했어요. 다시 시도해주세요. 계속 열리지 않으면 일반 브라우저에서 이 페이지를 열어주세요.');
       }
     },
     close

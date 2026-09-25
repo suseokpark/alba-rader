@@ -1,4 +1,5 @@
 export type SourceId = 'daangn' | 'albamon' | 'alba';
+export type AreaLevel = 'neighborhood' | 'district' | 'city' | 'province';
 
 export interface SearchArea {
   sido: string;
@@ -11,6 +12,8 @@ export interface SearchArea {
 export interface SearchOptions {
   scope: 'nationwide' | 'address';
   area?: SearchArea;
+  /** Omitted by legacy API callers: retain neighborhood search behavior. */
+  areaLevel?: AreaLevel;
 }
 
 export interface JobListing {
@@ -23,6 +26,15 @@ export interface JobListing {
   schedule?: string;
 }
 
+/** Client-only initial multi-search progress. Entries are completed responses,
+ * in submitted neighborhood order, not placeholders for pending requests.
+ * Callbacks receive copied, deeply frozen snapshots.
+ */
+export interface DaangnSearchProgress {
+  entries: { area: SearchArea; result: SearchResult }[];
+  total: number;
+}
+
 export interface SearchResult {
   source: SourceId;
   status: 'ok' | 'empty' | 'unavailable';
@@ -31,6 +43,25 @@ export interface SearchResult {
   checkedAt: string;
   message?: string;
   regionNote?: string;
+  regionResults?: {
+    area: SearchArea;
+    label: string;
+    status: 'ok' | 'empty' | 'unavailable';
+    jobsCount: number;
+    searchUrl: string;
+    checkedAt: string;
+    message?: string;
+  }[];
+  /** Client-only validated, ordered pre-deduplication responses for failed-area retry.
+   * Never sent to the search API; each nested result is a single region response.
+   */
+  regionEntries?: { area: SearchArea; result: SearchResult }[];
+  duplicateCount?: number;
+  partial?: boolean;
+  /** Client-only interruption of an initial multi-search. These areas have no
+   * completed response: they are not empty results or provider failures.
+   */
+  interruption?: { reason: 'cancelled' | 'timeout'; remainingAreas: SearchArea[] };
 }
 
 export const sources: { id: SourceId; name: string; hint: string }[] = [

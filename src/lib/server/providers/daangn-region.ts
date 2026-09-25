@@ -1,4 +1,4 @@
-import type { SearchArea } from '../../search';
+import type { AreaLevel, SearchArea } from '../../search';
 
 export interface DaangnRegion {
   id: number;
@@ -20,7 +20,14 @@ const provinceAliases: Record<string, string> = {
 };
 const province = (value: string) => provinceAliases[compact(value)] ?? compact(value);
 
-export async function resolveDaangnRegion(area: SearchArea, signal: AbortSignal): Promise<DaangnRegion | null> {
+export async function resolveDaangnRegion(
+  area: SearchArea,
+  signal: AbortSignal,
+  areaLevel: AreaLevel = 'neighborhood'
+): Promise<DaangnRegion | null> {
+  // The public picker defaults to regionDepth 3. Checked depth 1/2 responses
+  // do not provide province/district IDs; never reuse a dong ID for wider areas.
+  if (areaLevel !== 'neighborhood') return null;
   if (!area.sido || !area.bname) return null;
   const key = [area.bcode, area.sido, area.sigungu, area.bname].join('|');
   const cached = cache.get(key);

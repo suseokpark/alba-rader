@@ -24,12 +24,19 @@ export async function searchDaangn(query: string, options: SearchOptions = { sco
       regionNote: '전국 검색 미지원 · 당근은 동네와 주변 지역 기준으로 검색합니다.'
     };
   }
+  if (options.areaLevel && options.areaLevel !== 'neighborhood') {
+    return {
+      ...result,
+      message: '당근 공개 검색은 동네와 주변 기준으로만 연결되어 있어요. 선택한 행정구역 전체 검색은 지원하지 않아요.',
+      regionNote: '구·시·도 전체 검색 미지원 · 원문 링크에도 선택한 지역 범위가 적용되지 않습니다.'
+    };
+  }
   if (!options.area) return { ...result, message: '당근 공고를 검색할 주소를 먼저 선택해 주세요.' };
 
   try {
     // The region lookup and listings request share one bounded deadline.
     const signal = AbortSignal.timeout(12_000);
-    const selectedRegion = await resolveDaangnRegion(options.area, signal);
+    const selectedRegion = await resolveDaangnRegion(options.area, signal, options.areaLevel);
     if (!selectedRegion) {
       return { ...result, message: '선택한 주소와 일치하는 당근 동네를 확인하지 못했어요. 다른 주소를 선택해 주세요.' };
     }
@@ -97,7 +104,11 @@ export async function searchDaangn(query: string, options: SearchOptions = { sco
     return {
       ...result,
       checkedAt: new Date().toISOString(),
-      message: timeout ? '당근 응답이 늦어 조회를 마치지 못했어요. 다시 검색해 주세요.' : '당근에 연결하지 못했어요. 잠시 후 다시 검색해 주세요.'
+      // Reading a response can fail after connecting; do not assume a network cause.
+      // Keep upstream error details private and distinguish only known failure types.
+      message: timeout ? '당근 응답이 늦어 조회를 마치지 못했어요. 다시 검색해 주세요.'
+        : error instanceof SyntaxError ? '당근에서 받은 정보의 형식을 읽지 못했어요. 원문 검색 결과에서 확인해 주세요.'
+        : '당근 검색 결과를 확인하지 못했어요. 이 업체만 다시 시도하거나 원문 검색 결과에서 확인해 주세요.'
     };
   }
 }
