@@ -12,6 +12,7 @@ import * as daangnMulti from '../src/lib/daangn-multi.ts';
 import { areaLabel, normalizeAreaLevel, supportsSearchArea } from '../src/lib/search-area.ts';
 import { sources } from '../src/lib/search.ts';
 import { defaultJobFilters } from '../src/lib/filter-jobs.ts';
+import { createSearchSession } from '../src/lib/search-session.ts';
 
 // Execute the actual page handlers, not a copied policy implementation. This is a
 // source-level controller regression harness, not a browser or Svelte DOM test.
@@ -57,6 +58,8 @@ function harness(overrides = {}) {
     AbortController, Error, SearchRequestError, sources, defaultJobFilters,
     filters: defaultJobFilters(), sortOrder: 'source', resultsTitle: target('results'), stopButton: undefined,
     onDestroy: (callback) => teardowns.push(callback),
+    searchSession: { read: () => undefined, write: () => {}, clear: () => {} },
+    $state: { snapshot: (value) => structuredClone(value) },
     createSearchSnapshot, MAX_DAANGN_AREAS, addDaangnArea, neighborhoodKey, toSearchArea, areaLabel,
     finalizeInterruptedDaangn: daangnMulti.finalizeInterruptedDaangn,
     queryInput: target('query'), addressTrigger: target('address'), daangnTrigger: target('daangnAreas'),
@@ -1604,4 +1607,137 @@ test('cancelled or reset attempts cannot move stop focus on late responses or se
   assert.equal(f.state.lanes[0].state, 'done');
   assert.equal(f.state.appliedSnapshot, currentSnapshot);
   assert.deepEqual(f.focus, ['lane-alba', 'query', 'results']);
+});
+
+// Synthetic lifecycle/controller tests: no browser navigation, storage or network.
+// The teardown and capture implementation are extracted from the actual page.
+const sessionFields = ['query', 'selected', 'submitted', 'lanes', 'validation', 'scope', 'address',
+  'areaLevel', 'daangnMultiEnabled', 'daangnAreas', 'daangnNotice', 'submittedArea', 'sortOrder',
+  'filters', 'appliedSnapshot'];
+const sessionData = (state) => structuredClone(Object.fromEntries(sessionFields.map((key) => [key, state[key]])));
+
+test('page teardown saves completed results and the unsubmitted draft separately without DOM or request objects', () => {
+  const saved = [];
+  const plan = createSearchSnapshot({ query: '카페', selected: ['albamon', 'alba'], scope: 'nationwide',
+    address: null, areaLevel: 'district', daangnMultiEnabled: false, daangnAreas: [] });
+  assert.equal(plan.ok, true);
+  const f = harness({ query: '편의점', submitted: '카페', submittedArea: plan.snapshot.label,
+    scope: 'nationwide', appliedSnapshot: plan.snapshot, sortOrder: 'hourly-desc',
+    filters: { ...defaultJobFilters(), exclude: 'PC' },
+    lanes: [{ source: 'albamon', state: 'done', result: { source: 'albamon', status: 'ok',
+      jobs: [{ id: 'session-1', title: '합성 카페 공고', url: 'https://www.albamon.com/jobs/detail/123' }],
+      searchUrl: 'https://www.albamon.com/total-search?keyword=%EC%B9%B4%ED%8E%98', checkedAt: '2026-09-27T00:00:00.000Z' } },
+    { source: 'alba', state: 'done', error: '합성 연결 실패', retryable: true }],
+    searchSession: { read: () => undefined, write: (value) => saved.push(structuredClone(value)), clear: () => {} }
+  });
+  const before = sessionData(f.state);
+  f.destroy();
+  assert.equal(saved.length, 1, 'Leaving the page must retain the current search session once.');
+  assert.deepEqual(saved[0], before);
+  assert.deepEqual(Object.keys(saved[0]).sort(), [...sessionFields].sort(), 'Only explicit serializable search data belongs in the session.');
+  assert.deepEqual(f.focus, [], 'Navigation teardown must not focus disappearing controls.');
+});
+
+test('page teardown cancels a pending source, retains successful lanes and cannot save a late response', async (t) => {
+  const f = retryHarness(t);
+  const session = createSearchSession();
+  f.state.searchSession = session;
+  f.state.retrySource('alba');
+  const focusBefore = [...f.focus];
+  f.destroy();
+  const saved = session.read();
+  assert.equal(f.requests[0].signal.aborted, true);
+  assert.equal(f.state.controllers.size, 0);
+  assert.equal(saved.lanes.every((lane) => lane.state === 'done'), true);
+  assert.deepEqual(saved.lanes[0], f.successfulLane);
+  assert.equal(saved.lanes[1].cancelled, true);
+  assert.equal(saved.query, '편의점');
+  assert.equal(saved.submitted, '카페');
+  assert.equal(saved.appliedSnapshot.fingerprint, f.snapshot.fingerprint);
+  f.requests[0].resolve(f.emptyResponse());
+  await f.settle();
+  assert.deepEqual(session.read(), saved, 'An old response cannot change retained data.');
+  assert.deepEqual(sessionData(f.state), saved, 'The destroyed controller also ignores its old response.');
+  assert.deepEqual(f.focus, focusBefore);
+});
+
+test('page teardown retains completed Daangn progress, including empty or failed responses, without pending regions or late overwrite', async (t) => {
+  for (const status of ['ok', 'empty', 'unavailable']) {
+    const f = initialMultiHarness(t);
+    const session = createSearchSession();
+    f.state.searchSession = session;
+    const pending = f.search();
+    f.requests[0].resolve(Response.json(f.regionResult(0, status)));
+    await f.flush();
+    const oldProgress = f.calls.find(({ source }) => source === 'daangn').options.onProgress;
+    f.state.query = '편의점';
+    f.destroy();
+    const saved = session.read();
+    const lane = saved.lanes.find(({ source }) => source === 'daangn');
+    assert.equal(saved.lanes.every((item) => item.state === 'done'), true, status);
+    assert.equal(lane.result.status, status);
+    assert.equal(lane.result.regionEntries.length, 1, 'The uncompleted region must not become a fabricated failed response.');
+    assert.equal(lane.result.interruption.reason, 'cancelled');
+    assert.deepEqual(lane.result.interruption.remainingAreas, [f.areas[1]]);
+    assert.deepEqual(saved.filters, f.filters);
+    assert.equal(saved.sortOrder, 'hourly-desc');
+    assert.equal(saved.query, '편의점');
+    assert.equal(saved.submitted, '카페');
+    assert.deepEqual(saved.lanes.map(({ source }) => source), ['albamon', 'daangn', 'alba']);
+    assert.equal(f.requests[1].signal.aborted, true);
+    oldProgress({ total: 2, entries: f.areas.map((area, index) => ({ area, result: f.regionResult(index) })) });
+    f.requests[1].resolve(Response.json(f.regionResult(1)));
+    await pending;
+    await f.settle();
+    assert.deepEqual(session.read(), saved);
+    assert.deepEqual(sessionData(f.state), saved);
+    assert.deepEqual(f.focus, []);
+  }
+});
+
+test('leaving during failed-only retry preserves the original atomic partial result rather than an unfinished retry', async (t) => {
+  const f = partialRetryHarness(t);
+  const session = createSearchSession();
+  f.state.searchSession = session;
+  f.state.retryFailedDaangn();
+  f.destroy();
+  const saved = session.read();
+  const lane = saved.lanes.find(({ source }) => source === 'daangn');
+  assert.equal(lane.state, 'done');
+  assert.deepEqual(lane.result, f.previous);
+  assert.equal(lane.retryingFailed, undefined);
+  assert.equal(lane.cancelled, undefined);
+  assert.match(lane.retryNotice, /중단/);
+  assert.deepEqual(saved.lanes[0], f.mon);
+  assert.deepEqual(saved.lanes[2], f.alba);
+  assert.deepEqual(saved.filters, f.filters);
+  assert.equal(f.requests[0].signal.aborted, true);
+  f.requests[0].resolve(Response.json(f.regionResult(1)));
+  await f.settle();
+  assert.deepEqual(session.read(), saved);
+  assert.deepEqual(sessionData(f.state), saved);
+  assert.deepEqual(f.focus, ['lane-daangn']);
+});
+
+test('full reset clears the saved search and later teardown or late responses cannot revive it', async (t) => {
+  const f = retryHarness(t);
+  const session = createSearchSession();
+  f.state.searchSession = session;
+  session.write(sessionData(f.state));
+  f.state.retrySource('alba');
+  f.state.resetSearch();
+  assert.equal(session.read() == null, true, 'Reset clears the previous continuation immediately.');
+  const reset = sessionData(f.state);
+  assert.equal(reset.query, '');
+  assert.equal(reset.submitted, '');
+  assert.equal(reset.appliedSnapshot, null);
+  assert.deepEqual(reset.lanes, []);
+  assert.deepEqual(reset.filters, defaultJobFilters());
+  f.destroy();
+  assert.deepEqual(session.read(), reset, 'Navigating after reset may save only the new empty state.');
+  f.requests[0].resolve(f.emptyResponse());
+  await f.settle();
+  assert.deepEqual(session.read(), reset);
+  assert.deepEqual(sessionData(f.state), reset);
+  assert.deepEqual(f.focus, ['lane-alba', 'query']);
 });

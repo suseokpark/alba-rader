@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte';
-  import { sources, type SourceId, type SearchResult, type AreaLevel, type SearchArea, type DaangnSearchProgress } from '$lib/search';
+  import { getContext, onDestroy, tick } from 'svelte';
+  import { sources, type SourceId, type SearchResult, type AreaLevel, type SearchArea } from '$lib/search';
   import { areaLabel, areaLevelChoices, areaLevelNames, baseAreaHelp, normalizeAreaLevel, supportsSearchArea } from '$lib/search-area';
   import { createPostcodeSearch, selectedAddress, type SelectedAddress, type PostcodeStatus } from '$lib/postcode';
   import { sortJobs, type SortOrder } from '$lib/sort-jobs';
@@ -12,24 +12,26 @@
   import { createSearchSnapshot, requestSearchSource, SearchRequestError, type SearchSnapshot } from '$lib/search-request';
   import { appHandoffUrl, copyHandoffUrl } from '$lib/browser-handoff';
   import { trackJobClick } from '$lib/click-analytics';
+  import { SEARCH_SESSION, type SearchSession, type SearchLane as Lane } from '$lib/search-session';
 
-  type Lane = { source: SourceId; state: 'loading' | 'done'; result?: SearchResult; error?: string; cancelled?: boolean; retryable?: boolean; retryingFailed?: boolean; retryNotice?: string; progress?: DaangnSearchProgress };
-  let query = $state('');
+  const searchSession = getContext<SearchSession>(SEARCH_SESSION);
+  const restored = searchSession.read();
+  let query = $state(restored?.query ?? '');
   const queryTooLong = $derived(query.trim().length > 80);
-  let selected = $state<SourceId[]>(sources.map((source) => source.id));
-  let submitted = $state('');
-  let lanes = $state<Lane[]>([]);
-  let validation = $state('');
-  let scope = $state<'nationwide' | 'address'>('address');
-  let address = $state<SelectedAddress | null>(null);
-  let areaLevel = $state<AreaLevel>('district');
-  let daangnMultiEnabled = $state(false);
-  let daangnAreas = $state<SearchArea[]>([]);
-  let daangnNotice = $state('');
-  let submittedArea = $state('');
-  let sortOrder = $state<SortOrder>('source');
-  let filters = $state(defaultJobFilters());
-  let appliedSnapshot = $state<SearchSnapshot | null>(null);
+  let selected = $state<SourceId[]>(restored?.selected ?? sources.map((source) => source.id));
+  let submitted = $state(restored?.submitted ?? '');
+  let lanes = $state<Lane[]>(restored?.lanes ?? []);
+  let validation = $state(restored?.validation ?? '');
+  let scope = $state<'nationwide' | 'address'>(restored?.scope ?? 'address');
+  let address = $state<SelectedAddress | null>(restored?.address ?? null);
+  let areaLevel = $state<AreaLevel>(restored?.areaLevel ?? 'district');
+  let daangnMultiEnabled = $state(restored?.daangnMultiEnabled ?? false);
+  let daangnAreas = $state<SearchArea[]>(restored?.daangnAreas ?? []);
+  let daangnNotice = $state(restored?.daangnNotice ?? '');
+  let submittedArea = $state(restored?.submittedArea ?? '');
+  let sortOrder = $state<SortOrder>(restored?.sortOrder ?? 'source');
+  let filters = $state(restored?.filters ?? defaultJobFilters());
+  let appliedSnapshot = $state<SearchSnapshot | null>(restored?.appliedSnapshot ?? null);
   let queryInput = $state<HTMLInputElement>();
   let sourceTrigger = $state<HTMLDivElement>();
   let scopeTrigger = $state<HTMLButtonElement>();
@@ -334,6 +336,7 @@
 
   function resetSearch() {
     cancelSearch();
+    searchSession.clear();
     query = ''; selected = sources.map((source) => source.id); scope = 'address'; address = null;
     areaLevel = 'district'; daangnMultiEnabled = false; daangnAreas = []; daangnNotice = '';
     filters = defaultJobFilters(); sortOrder = 'source'; validation = ''; submitted = ''; submittedArea = '';
@@ -343,7 +346,18 @@
 
   function suggest(value: string) { query = value; void search(); }
   function time(iso: string) { return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); }
-  onDestroy(() => { ++generation; resetPostcodeCopy(); abortRequests(); postcodeSearch.close(); });
+  function writeSearchSession() {
+    searchSession.write($state.snapshot({ query, selected, submitted, lanes, validation, scope, address,
+      areaLevel, daangnMultiEnabled, daangnAreas, daangnNotice, submittedArea, sortOrder, filters, appliedSnapshot }));
+  }
+  onDestroy(() => {
+    // Stop pending work first so a return never restores an orphaned loading lane.
+    // The existing cancellation path retains completed and partial Daangn results.
+    cancelSearch();
+    writeSearchSession();
+    resetPostcodeCopy();
+    postcodeSearch.close();
+  });
 </script>
 
 <svelte:head>
