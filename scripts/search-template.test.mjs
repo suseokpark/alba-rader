@@ -168,6 +168,29 @@ test('filtered-empty recovery invokes the lane focus handler once with its own s
   }
 });
 
+test('filtered-empty actions expose their actual per-source element for guarded asynchronous focus recovery', () => {
+  const buttons = all.filter(({ node, ancestors }) => node.name === 'button'
+    && ancestors.some((item) => hasClass(item, 'lane-filtered-empty')));
+  assert.equal(buttons.length, 1);
+  const binding = buttons[0].node.attributes.find((item) => item.type === 'BindDirective' && item.name === 'this');
+  assert.ok(binding, 'The actual removable action must be available to the completion controller.');
+  assert.equal(binding.expression.type, 'MemberExpression');
+  assert.equal(binding.expression.object.type, 'Identifier');
+  assert.equal(binding.expression.object.name, 'laneFilterResetButtons');
+  assert.equal(binding.expression.computed, true);
+  const key = binding.expression.property;
+  assert.equal(key.type, 'MemberExpression');
+  assert.equal(key.object.type, 'Identifier');
+  assert.equal(key.object.name, 'lane');
+  assert.equal(key.property.type, 'Identifier');
+  assert.equal(key.property.name, 'source');
+  assert.equal(key.computed, false);
+  for (const source of ['albamon', 'daangn', 'alba']) {
+    const element = { syntheticSource: source };
+    assert.equal(evaluate(binding.expression, { lane: { source }, laneFilterResetButtons: { [source]: element } }), element);
+  }
+});
+
 test('explicit cancellation uses its focus wrapper and a stable bound results heading', () => {
   const buttons = all.filter(({ node }) => node.name === 'button' && textOf(node) === '조회 중단');
   assert.equal(buttons.length, 1);

@@ -1160,3 +1160,17 @@ SDK 열기3회만 수행. 주소 질의/재시도/실공고/지도/상세/공고
 산출물 `artifacts/single-search-cycle46/failure-status-review-202609270614.html`, `evidence-202609270614.md`,01~06.jpg,nav-red/green·unit/check/build.log,status-ssr-probes와postfix mjs/md,nav-synthetic-202609270610.html. 화면·실조회·로컬DB·상세검사자료는ignored로GitHub제외. 검증된page1/영구검사1/docs1만diff·포함파일검토후일반origin/main커밋·푸시/원격SHA확인. 배포없음. 실제당근부분실패·IAB주소선택/Worker제약·실제취소·실기기/낭독기/전체접근성은미검증/미해결. 다음후보는부분실패안내와실패동네재시도의키보드·초점결합경계.
 
 보고서1280/390 첫화면 시각검수·전체이미지4/4로드·문서/section/figure/table가로넘침0. 임시보고서탭46닫음·viewport복원. 코드변경은nav표시1분기로제한했고 실검색API변경없이근거종류를분리해기록했다.
+
+## Cycle47 — 2026-09-27 07:00 시작: 실패 동네 재조회 완료 시 키보드 초점 복구
+
+07:00:48 현재시각·clean main1cd9e5f·이전기록 확인. audit·diagnose·browser·HTML 기록 스킬 사용, 디자인context없음. 제품수정전07:10:54 확인. 종료09:00/08:30기능동결 유지.
+
+- 새 결함: 실제page/컴포넌트/helper를 mount한 분리된 합성응답 브라우저에서 재현. 당근부분결과1건/필터표시0 → 실패동네재시도 → 대기중Tab으로lane필터초기화초점 → 일치공고응답 시 버튼제거·activeElement=BODY. 버튼을누른초기화(Cycle26)와 다른 비동기경계다. 사라진컨트롤인계누락/영역재생성/필터변경 가설을 비교했고 실제완료handler가중단버튼만보호하며 필터유지됨을 확인했다. 전체laneDOM동일성은계측안함.
+- 최소수정: 업체별실제필터초기화버튼binding, 완료순간해당버튼초점만capture. tick이후동일generation·버튼isConnectedfalse·현재BODY를모두만족하면현재업체제목focus(스크롤허용). 살아있는버튼/새사용자초점/다른업체/새검색·reset·teardown/없어진heading은가로채지않음. CSS·색·업체순서·API·수집·필터·통계불변.
+- 영구회귀9개추가(실제controller8·실제ASTbinding1). 기준93/93, 최초tracerRED와대상선택10개중7PASS/3FAIL보존 → 대상102/102GREEN. 최종 **394/394**, fail/cancel/skip0. 타입 **오류0/경고0**, 이후직렬build·Wrangler **dry-run성공**. 배포아님. 독립읽기검토차단사항없음. DOM제거/BODY/tick모의는실제DOM증거와구분.
+- 합성브라우저수정후:390×844·320×740에서필터버튼제거후title-daangn초점3px/카드1/불러온2·표시1. 제목top457/405로화면안·nav아래,문서폭390/320.390다음Tab첫동네원문링크로이어짐(열지않음).320재시도중검색어입력→완료에서도INPUT#query/내용유지·제출제목과미제출안내분리. 합성하니스의외부경계차단/표시를명시했고실제5173에가짜공고주입없음. 실제당근응답·사용자성공률검증아님.
+- 실제앱:시작/빌드후기존빈query/카드0/주소기준·시군구/세업체대기순서유지확인.새공고검색·원문/지도·주소SDK·지원·인증·배포0.실제앱과합성탭warn/error조회각각0이나전체네트워크0/업스트림횟수주장없음.임시47닫음·viewport복원·기존사용자탭/서버/DB/자동화유지.
+
+산출물 `artifacts/single-search-cycle47/focus-retry-review-202609270715.html`, `evidence-202609270715.md`,01~07.jpg,baseline/RED/GREEN/unit/check/build.log,client-focus-harness0704/0711.html 및generator/설명.화면·합성자료·로컬로그는ignored로GitHub제외.검증된page1/test2/docs1만diff·포함파일확인후일반origin/main커밋·푸시/원격SHA확인.배포없음.이번전체접근성·대비·44px전체점검·큰글자·reduced-motion·낭독기·실기기·운영검증은아니며기존IAB주소선택/Worker제약·실제당근부분실패/취소미검증을유지한다.다음후보는부분재시도중필터수정후취소경계의결과/초점일관성이다.
+
+보고서1280/390 첫화면시각검수·전체이미지6/6로드·문서/section/figure가로넘침0.임시보고서48닫음·viewport복원.보고서는이미지와같은폴더가필요하며외부게시하지않았다.

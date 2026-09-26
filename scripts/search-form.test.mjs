@@ -11,7 +11,7 @@ import { MAX_DAANGN_AREAS, addDaangnArea, aggregateDaangnResults, neighborhoodKe
 import * as daangnMulti from '../src/lib/daangn-multi.ts';
 import { areaLabel, normalizeAreaLevel, supportsSearchArea } from '../src/lib/search-area.ts';
 import { sources } from '../src/lib/search.ts';
-import { defaultJobFilters } from '../src/lib/filter-jobs.ts';
+import { defaultJobFilters, filterJobs } from '../src/lib/filter-jobs.ts';
 import { createSearchSession } from '../src/lib/search-session.ts';
 
 // Execute the actual page handlers, not a copied policy implementation. This is a
@@ -54,7 +54,7 @@ function harness(overrides = {}) {
     query: '카페', selected: ['albamon', 'daangn', 'alba'], scope: 'address', address: { ...AREA },
     areaLevel: 'district', daangnMultiEnabled: false, daangnAreas: [], daangnNotice: '', validation: '',
     submitted: '이전 검색', submittedArea: '이전 지역', lanes: [], generation: 0,
-    controllers: new Map(), attempts: new Map(), appliedSnapshot: null, laneHeadings: {},
+    controllers: new Map(), attempts: new Map(), appliedSnapshot: null, laneHeadings: {}, laneFilterResetButtons: {},
     AbortController, Error, SearchRequestError, sources, defaultJobFilters,
     filters: defaultJobFilters(), sortOrder: 'source', resultsTitle: target('results'), stopButton: undefined,
     onDestroy: (callback) => teardowns.push(callback),
@@ -1202,6 +1202,151 @@ test('a failed neighborhood that fails again keeps original successful jobs and 
   assert.equal(f.state.lanes[0], f.mon);
   assert.equal(f.state.lanes[2], f.alba);
   assert.deepEqual(f.focus, ['lane-daangn']);
+});
+
+// Model only the DOM boundary: the real retry/request/aggregate/filter/controller
+// functions execute, while element removal and tick are controlled here. Browser
+// focus loss, scrolling and focus-ring visibility require separate UI evidence.
+function focusedFilterRetryHarness(t) {
+  const f = partialRetryHarness(t);
+  const ownerDocument = { body: {}, activeElement: null };
+  const button = { ownerDocument, isConnected: true };
+  const moves = [];
+  const heading = { focus: (options) => {
+    moves.push({ options, stateAtFocus: f.state.lanes.find((lane) => lane.source === 'daangn')?.state });
+    ownerDocument.activeElement = heading;
+  } };
+  f.state.filters = { ...defaultJobFilters(), include: '복구조건' };
+  assert.equal(filterJobs(f.previous.jobs, f.state.filters).length, 0);
+  f.state.laneHeadings.daangn = heading;
+  f.state.laneFilterResetButtons.daangn = button;
+  f.state.retryFailedDaangn();
+  assert.equal(ownerDocument.activeElement, heading, 'Retry start keeps its existing heading focus.');
+  moves.length = 0;
+  ownerDocument.activeElement = button; // User Tabs to the retained empty-result action.
+  t.after(() => f.finishTick());
+  return { ...f, ownerDocument, button, heading, moves,
+    async completeRetry(matches = true) {
+      const result = f.regionResult(1);
+      result.jobs[0].title = matches ? '합성 복구조건 공고' : '합성 다른 공고';
+      f.requests[0].resolve(Response.json(result));
+      await f.settle();
+      const lane = f.state.lanes.find((item) => item.source === 'daangn');
+      assert.equal(lane.state, 'done');
+      assert.equal(lane.result.jobs.length, 2);
+      assert.equal(filterJobs(lane.result.jobs, f.state.filters).length, matches ? 1 : 0);
+    },
+    removeButton() {
+      button.isConnected = false;
+      ownerDocument.activeElement = ownerDocument.body;
+      delete f.state.laneFilterResetButtons.daangn;
+    },
+    async render() { f.finishTick(); await new Promise(setImmediate); }
+  };
+}
+
+test('failed-only retry restores the current lane heading after its focused filtered-empty action is removed', async (t) => {
+  const f = focusedFilterRetryHarness(t);
+  const filters = f.state.filters;
+  await f.completeRetry();
+  assert.deepEqual(f.moves, [], 'Do not focus before the changed result layout has rendered.');
+  f.removeButton();
+  await f.render();
+  assert.equal(f.ownerDocument.activeElement, f.heading,
+    'Completion must recover BODY focus only when the focused filtered-empty button disappeared.');
+  assert.deepEqual(f.moves, [{ options: undefined, stateAtFocus: 'done' }],
+    'Focus after rendering with scrolling allowed, rather than preventScroll on the old layout.');
+  assert.equal(f.state.filters, filters);
+  assert.equal(f.state.query, '편의점');
+  assert.equal(f.state.appliedSnapshot, f.snapshot);
+  assert.equal(f.state.lanes[0], f.mon);
+  assert.equal(f.state.lanes[2], f.alba);
+});
+
+test('filtered-empty focus recovery leaves a surviving action and newer user focus alone', async (t) => {
+  for (const boundary of ['button-remains', 'new-user-focus']) {
+    const f = focusedFilterRetryHarness(t);
+    await f.completeRetry(boundary !== 'button-remains');
+    if (boundary === 'button-remains') {
+      // BODY alone is not evidence of removal: a still-connected action may
+      // have been blurred by the user while all new listings remain filtered.
+      f.ownerDocument.activeElement = f.ownerDocument.body;
+    } else {
+      f.removeButton();
+      f.ownerDocument.activeElement = f.state.queryInput;
+    }
+    const active = f.ownerDocument.activeElement;
+    await f.render();
+    assert.equal(f.ownerDocument.activeElement, active, boundary);
+    assert.deepEqual(f.moves, [], boundary);
+  }
+});
+
+test('completion only schedules filtered-empty recovery for the action focused at that moment', async (t) => {
+  const f = focusedFilterRetryHarness(t);
+  f.ownerDocument.activeElement = f.state.queryInput;
+  await f.completeRetry();
+  assert.equal(f.ticks(), 0, 'Do not arm delayed focus recovery for an unfocused action.');
+  f.removeButton();
+  await f.render();
+  assert.equal(f.ownerDocument.activeElement, f.ownerDocument.body);
+  assert.deepEqual(f.moves, []);
+});
+
+test('another source completing cannot schedule recovery for the focused Daangn filtered-empty action', async (t) => {
+  const f = focusedFilterRetryHarness(t);
+  f.state.lanes = f.state.lanes.map((lane) => lane.source === 'alba' ? { source: 'alba', state: 'loading' } : lane);
+  f.state.finishLane(f.alba);
+  assert.equal(f.state.lanes.find((lane) => lane.source === 'daangn').state, 'loading');
+  assert.equal(f.ticks(), 0, 'Inspect only the source whose result is being replaced.');
+  await f.render();
+  assert.equal(f.ownerDocument.activeElement, f.button);
+  assert.deepEqual(f.moves, []);
+});
+
+for (const boundary of ['new-search', 'reset', 'teardown']) {
+  test(`filtered-empty focus recovery ignores an obsolete render after ${boundary}`, async (t) => {
+    const f = focusedFilterRetryHarness(t);
+    await f.completeRetry();
+    f.removeButton();
+    const previousGeneration = f.state.generation;
+    if (boundary === 'new-search') {
+      f.state.query = '새 합성 검색';
+      f.state.selected = ['albamon'];
+      const pending = f.search();
+      t.after(async () => { f.state.cancelSearch(); await pending; });
+    } else if (boundary === 'reset') f.state.resetSearch();
+    else f.destroy();
+    assert.ok(f.state.generation > previousGeneration, 'Exercise the real lifecycle invalidation.');
+    // Keep BODY and the old binding to make this specifically a generation
+    // guard check, not an accidental pass from another focus or missing node.
+    assert.equal(f.ownerDocument.activeElement, f.ownerDocument.body);
+    assert.equal(f.state.laneHeadings.daangn, f.heading);
+    const focusBefore = [...f.focus];
+    await f.render();
+    assert.equal(f.ownerDocument.activeElement, f.ownerDocument.body);
+    assert.deepEqual(f.moves, []);
+    assert.deepEqual(f.focus, focusBefore);
+  });
+}
+
+test('filtered-empty recovery uses the current heading binding after rendering and tolerates its removal', async (t) => {
+  for (const boundary of ['rebound', 'removed']) {
+    const f = focusedFilterRetryHarness(t);
+    await f.completeRetry();
+    f.removeButton();
+    const currentMoves = [];
+    const currentHeading = { focus: (options) => {
+      currentMoves.push(options);
+      f.ownerDocument.activeElement = currentHeading;
+    } };
+    if (boundary === 'rebound') f.state.laneHeadings.daangn = currentHeading;
+    else delete f.state.laneHeadings.daangn;
+    await f.render();
+    assert.deepEqual(f.moves, [], 'Do not retain the pre-render heading element.');
+    assert.deepEqual(currentMoves, boundary === 'rebound' ? [undefined] : []);
+    assert.equal(f.ownerDocument.activeElement, boundary === 'rebound' ? currentHeading : f.ownerDocument.body);
+  }
 });
 
 function initialMultiHarness(t, { timeoutMs, areaCount = 2 } = {}) {
