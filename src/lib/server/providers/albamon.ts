@@ -13,6 +13,16 @@ function text(value: unknown): string {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
 }
 
+/** Decode display text once without treating literal tags as markup. */
+function listingText(value: unknown): string {
+  const raw = text(value);
+  if (!raw.includes('&')) return raw;
+  // A textarea decodes character references, including numeric references without
+  // a semicolon. Escape literal '<' so supplied text cannot close the container.
+  const $ = load(`<textarea>${raw.replace(/</g, '&lt;')}</textarea>`, undefined, false);
+  return text($('textarea').text());
+}
+
 interface AlbamonAreaCode {
   si: string;
   gu: string;
@@ -180,7 +190,7 @@ export async function searchAlbamon(query: string, options: SearchOptions = { sc
     for (const item of collection) {
       const job = record(item);
       const recruitNo = String(job.recruitNo ?? '');
-      const title = text(job.recruitTitle);
+      const title = listingText(job.recruitTitle);
       if (!/^\d+$/.test(recruitNo) || !title || seen.has(recruitNo)) continue;
       const jobUrl = `https://www.albamon.com/jobs/detail/${recruitNo}`;
       // Verify this is a detail URL actually linked by the returned search page.
@@ -198,7 +208,7 @@ export async function searchAlbamon(query: string, options: SearchOptions = { sc
         id: `albamon-${recruitNo}`,
         title,
         url: jobUrl,
-        company: text(job.companyName) || undefined,
+        company: listingText(job.companyName) || undefined,
         // Prefer the supplied workplace address over the broader search-area label.
         location: text(job.workplaceAddress) || text(job.workplaceArea) || undefined,
         pay: [text(record(job.payType).description), text(job.pay)].filter(Boolean).join(' ') || undefined,
