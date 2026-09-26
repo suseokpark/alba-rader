@@ -1141,8 +1141,22 @@ SDK 열기3회만 수행. 주소 질의/재시도/실공고/지도/상세/공고
 05:00:49 현재시각·clean main118d2fb·이전기록 확인. audit·diagnose·browser·HTML 기록 스킬, 디자인 context 없음. 종료09:00/08:30기능동결 유지. 새 재현 가능 제품 결함이 없어 소스·설정·의존성·영구검사를 바꾸지 않았다.
 
 - 현재 브라우저: 기존04:02 전국카페30건을 그대로 사용. 주말+오후는 표시1/일치1/미확인0, 미확인포함은28/1/27. 명시된 조건 불일치2건은 제외 유지. 최소시급12000 추가 시3/0/3 및 실제카드3개 확인필요배지 일치. 월급전환은 최소시급0·비활성, 근무조건포함 유지,2/0/2. 제목에서 일정조건을 추정하지 않는다.
-- 390px에서 관찰한 select4개/체크박스라벨44px·문서/scrollWidth390. 키보드Tab/Enter로 요일→시간→급여칩 해제: 마지막근무조건 해제 시 미확인false/disabled·배지0·남은급여칩초점3px, 급여해제 시 원래30개href/순서 동일. 편집접힘·viewport reset·앱tab1기존결과 유지. error/warn로그조회0. 새검색제출·원문/지도/지원·주소SDK·당근실조회·합성UI주입·클립보드변경0; 전체네트워크0은 계측하지 않아 주장하지 않는다.
+- 390px에서 관찰한 select4개/체크박스라벨44px·문서/scrollWidth390. 키보드Tab/Enter로 요일→시간→급여칩 해제: 마지막근무조건 해제 시 미확인false/disabled·배지0·남은급여칩초점3px, 급여해제 시30건 복원. **Cycle46 정정(06:10 KST): 당시 `.job-card` article에서 href를 읽어30개 null을 비교했으므로 원래 링크·순서 동일 주장은 철회하며 미검증으로 남긴다.** 편집접힘·viewport reset·앱tab1기존결과 유지. error/warn로그조회0. 새검색제출·원문/지도/지원·주소SDK·당근실조회·합성UI주입·클립보드변경0; 전체네트워크0은 계측하지 않아 주장하지 않는다.
 - 기존 filter-jobs/filter-controls/schedule-filters **27/27**, fail/cancel/skip0. 실제panel핸들러/page·panel파생식/prop바인딩/helper 합성결합 **3/3**. 급여탈락·알려진일정불일치는unknown포함으로복귀하지않고, 급여전환/마지막근무조건해제 후 집계일치. 최초1실패는 하니스기대값오류(요일해제후 명확한오전시작은확정일치)로 기대값만 정정; 제품RED/개선아님. 합성16건과실제30건 구분. 소스불변으로전체unit·타입·빌드 생략,이전378통과재집계없음.
 - 산출물 `artifacts/single-search-cycle45/schedule-pay-review-202609270504.html`, `evidence-202609270504.md`,01~07.jpg,targeted.log,pay-schedule-summary-probes.mjs/.md. 보고서1280시각검수/1280·390DOM이미지6/6·문서/section/figure넘침0. viewport전환직후모바일보고서캡처는축소중간화면이어서시각통과근거에서제외. 앱자체390캡처04~07은별도확인. 임시보고서tab43닫음·viewport복원·기존서버/탭40/자동화/DB보존.
 
 이 회차기록1파일만 diff/포함파일검토 후 일반 origin/main커밋·푸시하고 원격SHA확인. 화면·실조회자료·로그·합성검사는ignored로GitHub제외. 배포없음. 기존IAB주소선택/Worker제약 및 실제취소/실기기/낭독기/전체접근성은미검증이며 해결주장없음. 다음후보는 실패·부분조회에서 상단요약과원문검색이동안내의 구분이며, 이미검증한칩해제를새개선으로반복하지않는다.
+
+## Cycle46 — 2026-09-27 06:02 시작: 부분실패 메뉴 안내 보완·연결실패 복구 검증
+
+06:02:20 현재시각·clean main140d836·이전기록 확인. audit·diagnose·browser·HTML 기록 스킬, 디자인context없음. 수정전06:08:14 확인. 종료09:00/08:30기능동결 유지.
+
+- 새 결함: 실제 aggregate의 합성 당근empty1+unavailable1(status empty/partial true)을 실제Svelte SSR로 렌더하면 상단·lane·동네별안내는 일부실패인데 업체nav만0건. nav분기누락/partial유실/갱신차이 가설을 비교해 첫원인확인. 실제nav AST+집계·필터·중단헬퍼 영구회귀에서0건/1건/필터후0건3개 RED, 기타4개PASS. nav 최종건수 앞 partial분기만 추가→7/7GREEN. 조회중→중단→미완료→실패 우선순위 유지. CSS/색/업체순서/수집/API/필터/주소/통계불변.
+- 실제브라우저: 별도탭44만offline으로 전국카페알바몬1업체 제출→연결실패 안내/업체재시도, 공고없음문구없음. 초안편의점으로만수정→online복원→Enter재시도에서 원래카페·전국20건(06:04). 390px 버튼높이44/제목초점3px/문서넘침0. 명시Network.enable 후 실패GET은net::ERR_INTERNET_DISCONNECTED, 복구구간cursor188→230 API GET1(카페·알바몬·전국),다른API/클릭POST0,hasMore/truncated false. 제어된탭실패는업체장애아님; 성공연결실조회1회이며업스트림/캐시횟수미검증. warn/error조회[]와CDP실패는분리. 원문/지도/주소SDK/합성UI주입0, 전체외부요청0주장없음.
+- 최종자동검사 **385/385**, fail/cancel/skip0. 타입 **오류0/경고0**, 완료후직렬build·Wrangler **dry-run성공**, 배포아님. 독립actual-source SSR post-fix3/3은별도합성검사이며385에합산안함. 최초진단3/3은누락관찰이고, 첫SSR실패는공백기대값하니스문제. 원본보존/수정후별도파일. 독립읽기검토차단사항없음.
+- 합성메뉴별도HTML: 실제SSR nav4개+앱CSS(외부폰트만제외),표본마다합성표시/card0. 390·320 브라우저문서/nav/link가로넘침0,터치44~50px,320Tab초점3px. computed대비몬5.97/당근6.78/천국12.23,모션감소설정에서메뉴animation/transition0s. 실제당근응답/수화/전체앱/큰글자/낭독기/실기기검증아님. override복원·임시탭44/45닫음.
+- 증거정정: Cycle45 href비교가article의null30개비교였음을확인, ‘링크·순서동일’철회/30건복원만유지. 당시기준href없어미검증으로남기고Cycle45 docs/evidence/HTML에날짜붙여정정. 새비교는`.job-card a[href]`의양수건수·빈값없음우선확인. 이번HMR후기존30링크는확인했지만check/build이후dev재로드로0건/빈query 초기화. 이를보존통과라하지않고추가조회없이초기화된앱탭1인계. 기존탭40/서버/자동화/DB유지.
+
+산출물 `artifacts/single-search-cycle46/failure-status-review-202609270614.html`, `evidence-202609270614.md`,01~06.jpg,nav-red/green·unit/check/build.log,status-ssr-probes와postfix mjs/md,nav-synthetic-202609270610.html. 화면·실조회·로컬DB·상세검사자료는ignored로GitHub제외. 검증된page1/영구검사1/docs1만diff·포함파일검토후일반origin/main커밋·푸시/원격SHA확인. 배포없음. 실제당근부분실패·IAB주소선택/Worker제약·실제취소·실기기/낭독기/전체접근성은미검증/미해결. 다음후보는부분실패안내와실패동네재시도의키보드·초점결합경계.
+
+보고서1280/390 첫화면 시각검수·전체이미지4/4로드·문서/section/figure/table가로넘침0. 임시보고서탭46닫음·viewport복원. 코드변경은nav표시1분기로제한했고 실검색API변경없이근거종류를분리해기록했다.
