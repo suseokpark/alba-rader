@@ -1122,3 +1122,16 @@ SDK 열기3회만 수행. 주소 질의/재시도/실공고/지도/상세/공고
 - 산출물: `artifacts/single-search-cycle43/region-draft-review-202609270305.html`, `evidence-202609270308.md`,01~05.jpg,targeted.log,area-draft-probes.mjs/.md. 보고서1280/390 시각검수·이미지4/4로드·문서/section/figure넘침0, 임시tab41 닫음. 화면·실조회자료·검사로그는ignored로 GitHub 제외.
 
 이 회차기록1파일만 diff/포함파일 확인 후 origin/main에 일반커밋·푸시하고 원격SHA를 확인한다. 배포하지 않는다. 다음 후보는 검색중 입력수정·중단 후 필터/결과요약의 결합 경계이며 기존 취소 통과검사를 새 성과로 반복하지 않는다.
+
+## Cycle44 — 2026-09-27 04:01 시작: 검색 중 초안·필터 요약 점검, 실제 취소 미확인
+
+04:01:03 clean main8059a00·현재시각·이전기록 확인. audit·diagnose·browser·HTML 기록 스킬, 디자인 context 없음. 종료09:00/08:30기능동결 유지. 새 재현 가능 결함이 없어 제품·설정·의존성·영구검사는 바꾸지 않았다.
+
+- 실제 브라우저: 이전11건에서 최소시급12000/시급순 설정 후 전국카페2업체1배치 제출. 즉시편의점으로 입력만 변경하고0/2조회중·제출카페·필터유지·미제출안내 AX 확인. 다음 중단 클릭은 버튼이 사라져 실패했고 fresh AX상20+10완료였다. 반복조회하지 않았으며 이번 실제취소는 미확인이다. 완료화면을 취소통과 증거로 사용하지 않는다.
+- 실제 결과: loaded30/visible3(몬3·천국0),390에서천국0/10필터빈결과 구분 확인. 해당 필터초기화→30건/title-alba초점/초안편의점·제출카페·시급순 유지, 문서/scrollWidth390. 이후 추가조회 없이 입력카페·기본순·필터없음·편집접힘으로 정돈,04:02실제30건인계/viewport reset. error/warn조회0. 원문·지도·지원·주소SDK·당근실조회·합성UI주입·클립보드변경0, 전체네트워크0주장은하지않음.
+- 기존 form/request/filter/sort 회귀 **122/122**, fail/cancel/skip0. 독립 actual handler/derived/JobFiltersPanel summary 연결+실제helper 합성3/3: 초안수정·혼합완료/취소·근무조건미확인집계, 초기당근부분결과timeout집계, invalid초안중실패동네재시도timeout의원자보존. 실제 브라우저취소/당근/timeout/사용자성공률이 아니며 합성3/4건을 실제30건과 합산하지 않는다. 소스변경없어 전체unit·타입·빌드 생략, 이전378통과 재집계없음.
+- 산출물 `artifacts/single-search-cycle44/cancel-filter-review-202609270406.html`, `evidence-202609270406.md`,01~05.jpg,targeted.log,cancel-summary-probes.mjs/.md. 화면·실조회자료·합성검사·로그는ignored로GitHub제외. 기존사용자탭/서버/자동화/DB보존. 주소SDK선택·Worker·실기기/낭독기/전체접근성 제한은 이번에 해결/재검증하지않음.
+
+이 회차기록1파일만 diff/포함파일검토 후 일반 origin/main커밋·푸시 및 원격SHA확인. 배포없음. 다음 후보는 근무요일·시간 미확인포함과 급여필터의 결합 안내/집계이며 이미 통과한 취소검사를 반복해 새성과로 세지 않는다.
+
+보고서1280/390 각각 시각검수·이미지4/4로드·문서/section/figure넘침0. 임시보고서tab42 닫음·viewport reset·앱tab1 실제카페30건 유지. 실제취소 미확인과 합성통과 구분을 보고서에서도 확인했다.
