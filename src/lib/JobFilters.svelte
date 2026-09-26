@@ -77,10 +77,10 @@
         </select>
       </label>
       <label for="filter-include">포함 키워드
-        <input id="filter-include" value={filters.include} oninput={(event) => change({ include: event.currentTarget.value })} maxlength="120" placeholder="예: 주말, 카페" aria-describedby="filter-keywords-help" />
+        <input id="filter-include" value={filters.include} oninput={(event) => change({ include: event.currentTarget.value })} placeholder="예: 주말, 카페" aria-describedby="filter-keywords-help" />
       </label>
       <label for="filter-exclude">제외 키워드
-        <input id="filter-exclude" value={filters.exclude} oninput={(event) => change({ exclude: event.currentTarget.value })} maxlength="120" placeholder="예: 배달, 영업" aria-describedby="filter-keywords-help" />
+        <input id="filter-exclude" value={filters.exclude} oninput={(event) => change({ exclude: event.currentTarget.value })} placeholder="예: 배달, 영업" aria-describedby="filter-keywords-help" />
       </label>
     </div>
     <div class="filter-help">
