@@ -1174,3 +1174,18 @@ SDK 열기3회만 수행. 주소 질의/재시도/실공고/지도/상세/공고
 산출물 `artifacts/single-search-cycle47/focus-retry-review-202609270715.html`, `evidence-202609270715.md`,01~07.jpg,baseline/RED/GREEN/unit/check/build.log,client-focus-harness0704/0711.html 및generator/설명.화면·합성자료·로컬로그는ignored로GitHub제외.검증된page1/test2/docs1만diff·포함파일확인후일반origin/main커밋·푸시/원격SHA확인.배포없음.이번전체접근성·대비·44px전체점검·큰글자·reduced-motion·낭독기·실기기·운영검증은아니며기존IAB주소선택/Worker제약·실제당근부분실패/취소미검증을유지한다.다음후보는부분재시도중필터수정후취소경계의결과/초점일관성이다.
 
 보고서1280/390 첫화면시각검수·전체이미지6/6로드·문서/section/figure가로넘침0.임시보고서48닫음·viewport복원.보고서는이미지와같은폴더가필요하며외부게시하지않았다.
+
+
+## Cycle48 — 2026-09-27 08:00 시작: 필터 수정·부분 재시도 취소·늦은 응답 결합, 코드 변경 없음
+
+08:00:52 현재시각·clean mainac1c2bb·이전기록확인. audit·diagnose·browser·HTML 기록 스킬 사용, 디자인context없음. 종료09:00/08:30기능동결유지. 새결함이없어제품·CSS·설정·의존성·영구검사를바꾸지않았다.
+
+- 실제앱5173은기존빈검색/기본주소범위/업체순서·골드테마를관찰만하고보존. 새공고검색·주소SDK·원문/지도/공고열기·합성주입·배포없음. 별도5186의실제page/컴포넌트mount하니스에서수동합성request만대체했다. 취소신호를기록하되Promise를유지하도록설계해실제page의늦은응답방어를확인;서비스/보안우회아님.
+- 합성브라우저390:부분재시도대기중포함기존·시급순수정→표시0에서1. Enter취소후기존href1·필터/정렬/제출조건·조회시각·중단안내보존,results-title초점(top701/bottom731). F8늦은응답후동일DOMsnapshot(위값/요약/초점/위치)일치. 재시도활성/높이44·다음Tab기존공고링크초점3px,링크열지않음.320에서는취소후결과레이아웃만추가확인(문서폭320/초점3/버튼44),전체취소흐름반복아님.임시49닫음·viewport복원·기존사용자탭/서버/DB/자동화유지.
+- 독립actual handler/request/aggregate/filter/session합성probe2/2:포함·제외수정표시1→0/취소/늦은성공·HTTP503무시/실제캡처·teardown·초기화식복원후동일. fetch·DOM·tick·binding·runes모의임을명시;실제브라우저·실당근·실사용자검증아님. 제품수정RED/GREEN이없고기존영구검사수에합산하지않음.
+- 종료전회귀:관련136/136,전체 **394/394**, fail/cancel/skip0.타입 **오류0/경고0**, 완료후직렬build·Wrangler **dry-run성공**.이전검사재실행이며새개선394개아님.합성브라우저warn/error조회0이나전체네트워크0/업스트림횟수주장없음.이번실검색·실제취소/주소선택·Worker·큰글자/전체대비/reduced-motion/낭독기/실기기/운영미검증을유지.
+- 검사도구선택자오류2개(summary button정확일치·정렬내부값hourly)를fresh AX요소/화면label로수정해결과확인.실패한시도를제품오류또는통과로세지않음.합성공고제목의초기필터불일치문구는fixture이름이며현재상태배지가아님.
+
+산출물 `artifacts/single-search-cycle48/cancel-late-review-202609270807.html`, `evidence-202609270807.md`,01~06.jpg,대상/전체/type/build로그,late-response-harness0802.html·generator/설명,독립probe/로그/한계.화면·합성자료·로컬로그는ignored로GitHub제외.회차기록1파일만검토후일반origin/main커밋·푸시/원격SHA확인.배포없음.다음은새기능착수없이마감회귀근거·미검증제한·원격상태를인수인계하고09:00자동실행종료다.
+
+보고서1280/390첫화면시각검수·이미지6/6로드·문서/section/figure가로넘침0.임시보고서50닫음·viewport복원.초기하니스HTMLtitle은mount후실제page제목으로덮이므로합성표시근거는화면배너/공고문구로한정한다.
