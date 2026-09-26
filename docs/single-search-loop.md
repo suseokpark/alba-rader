@@ -1111,3 +1111,14 @@ SDK 열기3회만 수행. 주소 질의/재시도/실공고/지도/상세/공고
 - 산출물: `artifacts/single-search-cycle42/postcode-boundary-review-202609270205.html`, `evidence-202609270207.md`,01~04.jpg,targeted.log 및 `postcode-return-probes.mjs/.md`(저장 후3/3재실행). 보고서1280/390 시각검수·이미지2/2로드·문서/section/figure넘침0. 임시보고서39 닫음·viewport reset·사용자tab1/기존서버/자동화/DB 보존. 화면·실조회·로컬검사자료는ignored에만 보관한다.
 
 실행 가능한 새 결함이 없어 제품 코드는 그대로다. 본 회차기록1파일만 diff·포함파일 검토 후 origin/main에 일반커밋·푸시하고 원격SHA를 확인한다. 배포 없음. 다음은 지역단위/업체적용범위와 미제출조건 안내의 결합 경계 후보이며, 이미 통과한 취소 검사를 새 개선으로 반복하지 않는다. 기존 운영Worker/실기기/낭독기/전체접근성 제한은 그대로 남는다.
+
+## Cycle43 — 2026-09-27 03:01 시작: 지역 조건과 기존 결과 구분, 코드 변경 없음
+
+03:01:50 현재시각·clean main b6c08df 및 이전 기록 확인. audit·diagnose·browser·HTML 기록 스킬 사용, 저장된 디자인 context 없음. 종료09:00/08:30 기능동결 유지. 새 재현 가능 결함이 없어 제품·설정·의존성·영구테스트를 바꾸지 않았다.
+
+- 실제 브라우저: 이전01:11 알바몬11건에서 전국→주소기준·동단위 전환 시 당근 활성화/미제출 안내와 기존 적용지역 전국이 구분됐다. 주소누락 제출은 결과를 보존하고 주소찾기로 초점복귀. 전국·별도동네0곳 제출 후 당근 제외 시 오류/미제출 안내 해제, Space 재선택→바뀐조건 제출 시 동네추가 초점·오류 연결 확인.390에서 추가버튼44px·aria-describedby 연결·문서/scrollWidth390. district/전국/multi-off로 복원 후 검색어·11건·전국·01:11 유지/미제출 안내 없음. getByLabel 무일치는 fresh DOM의 combobox role로 해결한 검사도구 선택자 문제이지 제품 결함이 아니다.
+- 오프라인: 기존 search-area/request/form/session **123/123**, fail/cancel/skip0. 독립 actual page AST/핸들러/파생식+helper 합성 결합probe **3/3**: 동→구→동의 업체/dirty복원과 적용lane 보존, 수원시 내부주소변경 vs 서울 정규화와 기존라벨보존, 별도당근만에서 비활성기준주소 삭제·범위전환·토글복원. SDK/DOM/runes·빈lane은 합성이며 실제 주소/업체검색/반응성 검증이 아니다. 영구검사 수에 더하지 않는다. 소스변경 없어 전체unit·타입·빌드 생략, 이전378개 통과를 이번 결과로 표시하지 않음.
+- 외부/인계: 유효 공고검색 제출·원문·지도·주소SDK·주소선택·합성UI주입·클립보드변경0. 전체 네트워크0은 주장하지 않는다. error/warn로그 조회0. 사용자tab1·기존tab40·서버·자동화·DB 유지, viewport reset. SDK실제선택/지역별실검색/Worker/실기기/낭독기/전체접근성은 미확인이고 기존 제한을 해결했다는 주장은 없다.
+- 산출물: `artifacts/single-search-cycle43/region-draft-review-202609270305.html`, `evidence-202609270308.md`,01~05.jpg,targeted.log,area-draft-probes.mjs/.md. 보고서1280/390 시각검수·이미지4/4로드·문서/section/figure넘침0, 임시tab41 닫음. 화면·실조회자료·검사로그는ignored로 GitHub 제외.
+
+이 회차기록1파일만 diff/포함파일 확인 후 origin/main에 일반커밋·푸시하고 원격SHA를 확인한다. 배포하지 않는다. 다음 후보는 검색중 입력수정·중단 후 필터/결과요약의 결합 경계이며 기존 취소 통과검사를 새 성과로 반복하지 않는다.
