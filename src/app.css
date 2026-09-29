@@ -252,10 +252,10 @@ h1 em { color: var(--accent); }
 .map-disclosure p { margin: 8px 0 0; }
 .search-options { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; }
 .source-toggle { color: var(--muted); border: 1px solid var(--control-line); background: var(--surface); border-radius: 8px; min-height: 44px; }
-.albamon { --source-color: var(--accent); --source-tint: var(--accent-soft); --source-ink: var(--accent); }
+.albamon { --source-color: #ff9a52; --source-tint: #332219; --source-ink: #ff9a52; }
 .daangn { --source-color: #aeb0b7; --source-tint: #2a2c30; --source-ink: #e3e4e8; }
 .alba { --source-color: #08090b; --source-outline: #8c8f98; --source-tint: #0c0d0f; --source-ink: #f5f5f2; }
-.source-toggle.chosen.albamon { color: var(--source-ink); border-color: var(--accent); background: var(--source-tint); }
+.source-toggle.chosen.albamon { color: var(--source-ink); border-color: var(--source-color); background: var(--source-tint); }
 .source-toggle.chosen.daangn { color: var(--source-ink); border-color: var(--source-color); background: var(--source-tint); }
 .source-toggle.chosen.alba { color: var(--source-ink); border-color: var(--source-outline); background: var(--source-tint); }
 .source-toggle:disabled { opacity: .65; }

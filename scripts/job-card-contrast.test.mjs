@@ -64,11 +64,13 @@ test('yellow search buttons use readable dark text on flat normal and hover back
   assert.ok(contrast('var(--accent)', 'var(--surface)') >= 3);
 });
 
-test('yellow provider labels and focus rings retain contrast on dark surfaces', () => {
+test('orange Albamon labels and yellow focus rings retain contrast on dark surfaces', () => {
   const provider = declarationsFor('.albamon');
-  assert.equal(provider['--source-ink'], 'var(--accent)');
-  assert.equal(provider['--source-tint'], 'var(--accent-soft)');
+  assert.equal(provider['--source-ink'], '#ff9a52');
+  assert.equal(provider['--source-tint'], '#332219');
   assert.ok(contrast(provider['--source-ink'], provider['--source-tint']) >= 4.5);
+  assert.ok(contrast(provider['--source-color'], 'var(--surface)') >= 3);
+  assert.equal(declarationsFor('.source-toggle.chosen.albamon')['border-color'], 'var(--source-color)');
   for (const surface of ['var(--background)', 'var(--surface)', 'var(--surface-soft)']) {
     assert.ok(contrast('var(--accent)', surface) >= 3);
     assert.ok(contrast('var(--muted)', surface) >= 4.5);
@@ -77,8 +79,8 @@ test('yellow provider labels and focus rings retain contrast on dark surfaces', 
   }
 });
 
-test('provider accents use yellow, grey and outlined black without obscuring labels', () => {
-  assert.equal(declarationsFor('.albamon')['--source-color'], 'var(--accent)');
+test('provider accents use orange, grey and outlined black separately from yellow actions', () => {
+  assert.equal(declarationsFor('.albamon')['--source-color'], '#ff9a52');
   assert.equal(declarationsFor(':root')['--accent'], '#d9ca79');
   assert.equal(declarationsFor('.daangn')['--source-color'], '#aeb0b7');
   assert.equal(declarationsFor('.alba')['--source-color'], '#08090b');
