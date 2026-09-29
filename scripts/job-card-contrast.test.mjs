@@ -79,7 +79,7 @@ test('yellow provider labels and focus rings retain contrast on dark surfaces', 
 
 test('provider accents use yellow, grey and outlined black without obscuring labels', () => {
   assert.equal(declarationsFor('.albamon')['--source-color'], 'var(--accent)');
-  assert.equal(declarationsFor(':root')['--accent'], '#ffe04b');
+  assert.equal(declarationsFor(':root')['--accent'], '#d9ca79');
   assert.equal(declarationsFor('.daangn')['--source-color'], '#aeb0b7');
   assert.equal(declarationsFor('.alba')['--source-color'], '#08090b');
   for (const selector of ['.daangn', '.alba']) {
