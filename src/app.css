@@ -254,7 +254,7 @@ h1 em { color: var(--accent); }
 .source-toggle { color: var(--muted); border: 1px solid var(--control-line); background: var(--surface); border-radius: 8px; min-height: 44px; }
 .albamon { --source-color: #ff9a52; --source-tint: #332219; --source-ink: #ff9a52; }
 .daangn { --source-color: #aeb0b7; --source-tint: #2a2c30; --source-ink: #e3e4e8; }
-.alba { --source-color: #08090b; --source-outline: #8c8f98; --source-tint: #0c0d0f; --source-ink: #f5f5f2; }
+.alba { --source-color: #aeb0b7; --source-outline: #aeb0b7; --source-tint: #2a2c30; --source-ink: #e3e4e8; }
 .source-toggle.chosen.albamon { color: var(--source-ink); border-color: var(--source-color); background: var(--source-tint); }
 .source-toggle.chosen.daangn { color: var(--source-ink); border-color: var(--source-color); background: var(--source-tint); }
 .source-toggle.chosen.alba { color: var(--source-ink); border-color: var(--source-outline); background: var(--source-tint); }

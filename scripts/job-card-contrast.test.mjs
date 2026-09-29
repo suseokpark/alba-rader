@@ -79,13 +79,16 @@ test('orange Albamon labels and yellow focus rings retain contrast on dark surfa
   }
 });
 
-test('provider accents use orange, grey and outlined black separately from yellow actions', () => {
+test('provider accents use orange for Albamon and grey for Daangn and Alba separately from yellow actions', () => {
   assert.equal(declarationsFor('.albamon')['--source-color'], '#ff9a52');
   assert.equal(declarationsFor(':root')['--accent'], '#d9ca79');
   assert.equal(declarationsFor('.daangn')['--source-color'], '#aeb0b7');
-  assert.equal(declarationsFor('.alba')['--source-color'], '#08090b');
+  assert.equal(declarationsFor('.alba')['--source-color'], '#aeb0b7');
+  assert.equal(declarationsFor('.alba')['--source-outline'], '#aeb0b7');
   for (const selector of ['.daangn', '.alba']) {
     const provider = declarationsFor(selector);
+    assert.equal(provider['--source-tint'], '#2a2c30');
+    assert.equal(provider['--source-ink'], '#e3e4e8');
     assert.ok(contrast(provider['--source-ink'], provider['--source-tint']) >= 4.5);
   }
   assert.ok(contrast(declarationsFor('.alba')['--source-outline'], 'var(--surface)') >= 3);
