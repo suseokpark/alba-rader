@@ -97,33 +97,33 @@
 </section>
 
 <style>
-  .filter-tool { margin-bottom: 20px; color: var(--ink, #302d29); }
-  .applied-filters { padding: 16px 18px; background: var(--surface-soft, #f5f1e9); border: 1px solid var(--line, #ded8ce); border-radius: 12px 12px 0 0; }
+  .filter-tool { margin-bottom: 20px; color: var(--ink); }
+  .applied-filters { padding: 16px 18px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px 12px 0 0; }
   .applied-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
   .applied-heading p { margin: 0; font-size: .875rem; font-weight: 600; }
-  .filter-reset { min-height: 44px; padding: 10px 13px; color: var(--ink, #302d29); background: transparent; border-color: var(--line, #ded8ce); }
+  .filter-reset { min-height: 44px; padding: 10px 13px; color: var(--ink); background: transparent; border-color: var(--line); }
   .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 12px 0 0; }
   .filter-chips li { max-width: 100%; min-width: 0; }
-  .filter-chips button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; max-width: 100%; border: 1px solid var(--line, #ded8ce); border-radius: 8px; padding: 9px 12px; text-align: left; line-height: 1.5; font-size: .8125rem; color: var(--ink, #302d29); background: #fffdf8; }
+  .filter-chips button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; text-align: left; line-height: 1.5; font-size: .8125rem; color: var(--ink); background: var(--surface); }
   .filter-chips button > span:first-child { min-width: 0; overflow-wrap: anywhere; }
   .filter-chips button > span:last-child { font-size: 1.125rem; flex-shrink: 0; }
-  .filter-chips button:hover, .filter-reset:hover:not(:disabled) { background: var(--accent-soft, #f7e6d4); }
-  .filter-chips .unknown-chip { border-style: dashed; background: var(--accent-soft, #f7e6d4); }
-  .filter-matches { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: .8125rem; line-height: 1.7; margin: 12px 0 0; color: var(--muted, #6d655b); }
-  .filter-matches strong { color: var(--ink, #302d29); }
+  .filter-chips button:hover, .filter-reset:hover:not(:disabled) { background: var(--accent-soft); }
+  .filter-chips .unknown-chip { border-style: dashed; background: var(--accent-soft); }
+  .filter-matches { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: .8125rem; line-height: 1.7; margin: 12px 0 0; color: var(--muted); }
+  .filter-matches strong { color: var(--ink); }
   .needs-confirmation { border-bottom: 1px dashed currentColor; }
-  .schedule-summary, .filter-feedback { margin: 8px 0 0; color: var(--muted, #6d655b); font-size: .75rem; line-height: 1.7; }
+  .schedule-summary, .filter-feedback { margin: 8px 0 0; color: var(--muted); font-size: .75rem; line-height: 1.7; }
   .filter-feedback { overflow-wrap: anywhere; }
   .filter-feedback:empty { margin: 0; }
-  .filters-panel { margin-bottom: 0; border-color: var(--line, #ded8ce); border-top: 0; border-radius: 0 0 12px 12px; background: #fffdf8; }
-  .filters-panel summary { min-height: 44px; color: var(--ink, #302d29); }
-  .filter-badge { background: var(--surface-soft, #f5f1e9); color: var(--muted, #6d655b); }
-  .filter-scope, .filter-help p, .unknown-help { color: var(--muted, #6d655b); }
-  .filter-grid label, .unknown-schedule { color: var(--ink, #302d29); }
-  .filter-grid select, .filter-grid input { color: var(--ink, #302d29); border-color: var(--line, #ded8ce); background: var(--surface-soft, #f5f1e9); }
-  .filter-bottom { border-color: var(--line, #ded8ce); }
+  .filters-panel { margin-bottom: 0; border-color: var(--line); border-top: 0; border-radius: 0 0 12px 12px; background: var(--surface); }
+  .filters-panel summary { min-height: 44px; color: var(--ink); }
+  .filter-badge { background: var(--surface-soft); color: var(--muted); }
+  .filter-scope, .filter-help p, .unknown-help { color: var(--muted); }
+  .filter-grid label, .unknown-schedule { color: var(--ink); }
+  .filter-grid select, .filter-grid input { color: var(--ink); border-color: var(--control-line); background: var(--surface-soft); }
+  .filter-bottom { border-color: var(--line); }
   .unknown-schedule { min-height: 44px; }
-  .unknown-schedule input { accent-color: var(--ink, #302d29); }
-  button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--ink, #302d29); outline-offset: 3px; }
+  .unknown-schedule input { accent-color: var(--accent); }
+  button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   @media (max-width: 600px) { .applied-filters { padding: 12px; } .filter-chips { gap: 7px; } }
 </style>

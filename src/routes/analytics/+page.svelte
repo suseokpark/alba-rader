@@ -59,29 +59,29 @@
   .analytics { max-width: 980px; }
   .analytics section { padding-top: 30px; }
   .analytics-heading h1 { font-size: clamp(1.5rem, 4vw, 2.15rem); letter-spacing: -.04em; }
-  .analytics-heading p, .analytics-meta { color: #695949; font-size: .9375rem; line-height: 1.8; }
+  .analytics-heading p, .analytics-meta { color: var(--muted); font-size: .9375rem; line-height: 1.8; }
   .analytics-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin: 24px 0 16px; }
   .analytics-controls label { display: grid; gap: 7px; font-size: .875rem; font-weight: 600; }
-  .analytics-controls select { min-height: 44px; padding: 9px 32px 9px 12px; border: 1px solid #cbbbab; border-radius: 10px; background: #fffdf9; color: #39312b; font: inherit; }
+  .analytics-controls select { min-height: 44px; padding: 9px 32px 9px 12px; border: 1px solid var(--control-line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
   .analytics .quiet-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: .875rem; }
   .analytics-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .analytics-totals p { margin: 0; padding: 22px; border: 1px solid #e4d8c9; border-radius: 18px; background: #fffdf9; color: #695949; }
-  .analytics-totals strong { display: block; color: #3b3028; font-size: 2rem; margin-top: 10px; }
+  .analytics-totals p { margin: 0; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--muted); }
+  .analytics-totals strong { display: block; color: var(--ink); font-size: 2rem; margin-top: 10px; }
   .analytics-totals span, .click-count span { font-size: .9375rem; margin-left: 5px; font-weight: 400; }
   .source-counts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 8px 0 26px; }
   .source-counts p { display: flex; gap: 8px; align-items: center; font-size: .875rem; }
   .source-counts strong { font-weight: 600; }
   .analytics h2 { font-size: 1.125rem; line-height: 1.7; }
-  .analytics h2 small { font-size: .875rem; font-weight: 400; color: #695949; display: inline-block; }
+  .analytics h2 small { font-size: .875rem; font-weight: 400; color: var(--muted); display: inline-block; }
   .click-ranking { list-style: none; padding: 0; display: grid; gap: 10px; }
-  .click-ranking li { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 14px; align-items: start; padding: 20px 16px; border: 1px solid #e4d8c9; border-radius: 16px; background: #fffdf9; }
-  .click-rank { color: #695949; padding-top: 5px; font-weight: 700; }
+  .click-ranking li { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 14px; align-items: start; padding: 20px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  .click-rank { color: var(--muted); padding-top: 5px; font-weight: 700; }
   .click-source { display: inline-block; border-radius: 6px; padding: 4px 8px; font-size: .875rem; color: var(--source-ink); background: var(--source-tint); }
-  .click-job a { display: block; min-height: 44px; padding: 10px 0; font-weight: 650; color: #3b3028; font-size: 1rem; line-height: 1.65; overflow-wrap: anywhere; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-  .click-job p { margin: 0; color: #695949; font-size: .875rem; overflow-wrap: anywhere; }
+  .click-job a { display: block; min-height: 44px; padding: 10px 0; font-weight: 650; color: var(--ink); font-size: 1rem; line-height: 1.65; overflow-wrap: anywhere; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .click-job p { margin: 0; color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
   .click-count { padding-top: 6px; font-size: 1.3rem; }
-  .analytics-state { padding: 28px 22px; background: #fffdf9; border: 1px solid #e4d8c9; border-radius: 16px; line-height: 1.8; }
-  .analytics-notes { margin-top: 28px; border-top: 1px solid #e4d8c9; color: #695949; font-size: .875rem; }
+  .analytics-state { padding: 28px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; line-height: 1.8; }
+  .analytics-notes { margin-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .875rem; }
   .analytics-notes summary { min-height: 44px; padding: 14px 0; cursor: pointer; }
   .analytics-notes ul { padding-left: 20px; line-height: 1.8; }
   .analytics-notes li { margin: 10px 0; }

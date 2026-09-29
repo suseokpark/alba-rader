@@ -53,27 +53,61 @@ for (const selector of ['.location', '.schedule', '.detail-link', '.job-card .pa
   });
 }
 
-test('gold search buttons use readable dark text at both declared gradient endpoints and on hover', () => {
+test('yellow search buttons use readable dark text on flat normal and hover backgrounds', () => {
   const button = declarationsFor('.search-submit');
-  assert.equal(button.background, 'linear-gradient(135deg, var(--gold-light), var(--gold))');
-  assert.equal(declarationsFor('.search-submit:hover:not(:disabled)').background, 'var(--gold-light)');
-  for (const background of ['var(--gold-light)', 'var(--gold)']) {
+  assert.equal(button.background, 'var(--accent)');
+  assert.equal(button.color, 'var(--accent-ink)');
+  assert.equal(declarationsFor('.search-submit:hover:not(:disabled)').background, 'var(--accent-hover)');
+  for (const background of ['var(--accent)', 'var(--accent-hover)']) {
     assert.ok(contrast(button.color, background) >= 4.5, `Search label must remain readable on ${background}.`);
   }
-  assert.ok(contrast(declarationsFor(':root')['--gold-border'], 'var(--surface)') >= 3);
+  assert.ok(contrast('var(--accent)', 'var(--surface)') >= 3);
 });
 
-test('gold provider labels and focus rings retain contrast on their light surfaces', () => {
+test('yellow provider labels and focus rings retain contrast on dark surfaces', () => {
   const provider = declarationsFor('.albamon');
-  assert.equal(provider['--source-ink'], 'var(--gold-ink)');
+  assert.equal(provider['--source-ink'], 'var(--accent)');
   assert.equal(provider['--source-tint'], 'var(--accent-soft)');
   assert.ok(contrast(provider['--source-ink'], provider['--source-tint']) >= 4.5);
-  assert.ok(contrast('var(--gold-ink)', 'var(--surface)') >= 3);
+  for (const surface of ['var(--background)', 'var(--surface)', 'var(--surface-soft)']) {
+    assert.ok(contrast('var(--accent)', surface) >= 3);
+    assert.ok(contrast('var(--muted)', surface) >= 4.5);
+    assert.ok(contrast('var(--ink)', surface) >= 4.5);
+    assert.ok(contrast('var(--control-line)', surface) >= 3);
+  }
 });
 
-test('provider accents follow the requested gold, grey and black palette', () => {
-  assert.equal(declarationsFor('.albamon')['--source-color'], 'var(--gold)');
-  assert.equal(declarationsFor(':root')['--gold'], '#c4a34f');
-  assert.equal(declarationsFor('.daangn')['--source-color'], '#85817c');
-  assert.equal(declarationsFor('.alba')['--source-color'], '#282624');
+test('provider accents use yellow, grey and outlined black without obscuring labels', () => {
+  assert.equal(declarationsFor('.albamon')['--source-color'], 'var(--accent)');
+  assert.equal(declarationsFor(':root')['--accent'], '#ffe04b');
+  assert.equal(declarationsFor('.daangn')['--source-color'], '#aeb0b7');
+  assert.equal(declarationsFor('.alba')['--source-color'], '#08090b');
+  for (const selector of ['.daangn', '.alba']) {
+    const provider = declarationsFor(selector);
+    assert.ok(contrast(provider['--source-ink'], provider['--source-tint']) >= 4.5);
+  }
+  assert.ok(contrast(declarationsFor('.alba')['--source-outline'], 'var(--surface)') >= 3);
+});
+
+test('page, actions and loading placeholders contain no gradients', () => {
+  assert.doesNotMatch(source, /(?:linear|radial|conic)-gradient\s*\(/i);
+  assert.equal(declarationsFor(':root')['color-scheme'], 'dark');
+  assert.equal(declarationsFor('body').background, 'var(--background)');
+  assert.equal(declarationsFor('.skeleton').background, 'var(--surface-soft)');
+});
+
+test('errors and unverified schedule badges remain readable in dark mode', () => {
+  for (const selector of ['.validation', '.lane-count.failed', '.job-card .unverified-schedule']) {
+    const style = declarationsFor(selector);
+    assert.ok(contrast(style.color, style.background) >= 4.5, selector);
+  }
+});
+
+test('filter and analytics scoped styles use shared dark surfaces', () => {
+  for (const file of ['../src/lib/JobFilters.svelte', '../src/routes/analytics/+page.svelte']) {
+    const component = readFileSync(new URL(file, import.meta.url), 'utf8').split('<style>')[1];
+    assert.match(component, /background: var\(--surface\)/);
+    assert.doesNotMatch(component, /background:\s*(?:#[0-9a-f]+|white)\b/i);
+    assert.doesNotMatch(component, /(?:linear|radial|conic)-gradient\s*\(/i);
+  }
 });

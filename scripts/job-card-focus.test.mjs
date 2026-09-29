@@ -41,10 +41,10 @@ test('job-card links declare a scoped inward focus offset at least as deep as th
   }
 });
 
-test('global link focus keeps a 3px solid dark-gold outline and outward offset for non-card links', () => {
+test('global link focus keeps a 3px solid yellow outline and outward offset for non-card links', () => {
   const global = declarationsFor('a:focus-visible');
   assert.match(global.outline || '', /^3px\s+solid\s+/);
-  assert.equal(global['outline-color'], 'var(--gold-ink)');
-  assert.equal(declarationsFor(':root')['--gold-ink'], '#705619');
+  assert.equal(global['outline-color'], 'var(--accent)');
+  assert.equal(declarationsFor(':root')['--accent'], '#ffe04b');
   assert.equal(global['outline-offset'], '4px');
 });
