@@ -45,6 +45,6 @@ test('global link focus keeps a 3px solid yellow outline and outward offset for 
   const global = declarationsFor('a:focus-visible');
   assert.match(global.outline || '', /^3px\s+solid\s+/);
   assert.equal(global['outline-color'], 'var(--accent)');
-  assert.equal(declarationsFor(':root')['--accent'], '#d9ca79');
+  assert.equal(declarationsFor(':root')['--accent'], '#f2de99');
   assert.equal(global['outline-offset'], '4px');
 });

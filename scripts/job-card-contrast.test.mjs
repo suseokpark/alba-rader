@@ -81,7 +81,7 @@ test('orange Albamon labels and yellow focus rings retain contrast on dark surfa
 
 test('provider accents use orange for Albamon and grey for Daangn and Alba separately from yellow actions', () => {
   assert.equal(declarationsFor('.albamon')['--source-color'], '#ff9a52');
-  assert.equal(declarationsFor(':root')['--accent'], '#d9ca79');
+  assert.equal(declarationsFor(':root')['--accent'], '#f2de99');
   assert.equal(declarationsFor('.daangn')['--source-color'], '#aeb0b7');
   assert.equal(declarationsFor('.alba')['--source-color'], '#aeb0b7');
   assert.equal(declarationsFor('.alba')['--source-outline'], '#aeb0b7');
